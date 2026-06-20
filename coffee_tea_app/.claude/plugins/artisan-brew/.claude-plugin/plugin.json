@@ -1,0 +1,8 @@
+{
+  "name": "artisan-brew",
+  "description": "Project context and working knowledge for The Artisan Brew coffee & tea shop app — React 18 + Vite + FastAPI + PostgreSQL + Stripe + Square.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Tin"
+  }
+}

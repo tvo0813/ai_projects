@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+test.db
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Env files — never commit secrets
+backend/.env
+frontend/.env
+stores/*.env
+*.env.local
+
+# Terraform state — stored remotely in S3
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+
+# IDE
+.DS_Store
+.idea/
+.vscode/
