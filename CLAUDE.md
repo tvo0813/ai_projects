@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A multi-store coffee & tea shop web app — the same codebase powers multiple stores (e.g. "Phin and Beans", "Phin Drip") via environment variables. React 18 + Vite + TypeScript frontend, Python FastAPI backend, PostgreSQL database, with Stripe payment and Square POS integrations.
 
-Store identity is configured entirely through env vars. See `stores/` for per-store `.env` files.
+Store identity is configured entirely through env vars. Edit `backend/.env` to switch stores.
 
 ## Development Commands
 
 ### Full Stack (Docker — recommended)
 ```bash
 cp backend/.env.example backend/.env   # fill in keys first
-docker compose --env-file stores/phin-and-beans.env up
+docker compose up
 ```
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:8000
@@ -56,7 +56,7 @@ alembic revision --autogenerate -m "description"  # generate new migration
 | `DYNAMODB_TABLE_MENU` | DynamoDB menu table (prod only) | `phin-and-beans-menu` |
 | `DYNAMODB_TABLE_DEALS` | DynamoDB deals table (prod only) | `phin-and-beans-deals` |
 
-Store env files live in `stores/<store-slug>.env`. To add a new store, create a new file there — no code changes needed.
+To switch stores, update `backend/.env` with the new store's values and restart the stack — no code changes needed.
 
 ## Architecture
 

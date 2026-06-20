@@ -53,14 +53,14 @@ backend/app/
 
 ```python
 # In any router that needs auth:
-from app.utils.auth import get_current_user, get_current_admin_user
+from app.utils.auth import get_current_active_user, get_admin_user
 
 @router.get("/my")
-def get_my_orders(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_my_orders(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     ...
 
 @router.post("/menu/")
-def create_item(data: MenuItemCreate, admin: User = Depends(get_current_admin_user), db: Session = Depends(get_db)):
+def create_item(data: MenuItemCreate, admin: User = Depends(get_admin_user), db: Session = Depends(get_db)):
     ...
 ```
 

@@ -1,7 +1,7 @@
 ---
-name: artisan-brew-context
+name: coffee-tea-app-context
 description: Load this skill when working on any feature, bug fix, or question about this multi-store coffee & tea shop app. Covers full-stack architecture, data models, service layer, auth, integrations, store config system, and development workflow.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Coffee & Tea Shop App — Project Context
@@ -23,7 +23,7 @@ A multi-store coffee & tea shop ordering platform. The same codebase powers mult
 ```bash
 # Full stack (recommended)
 cp backend/.env.example backend/.env   # fill in keys
-docker compose --env-file stores/phin-and-beans.env up
+docker compose up
 
 # Frontend only
 cd frontend && npm install && npm run dev   # http://localhost:5173 (uses frontend/.env)
@@ -44,7 +44,7 @@ URLs: Frontend → 5173, Backend API → 8000, Swagger → http://localhost:8000
 
 ## Multi-Store Config System
 
-Store identity lives entirely in env vars. Per-store files live in `stores/<slug>.env`.
+Store identity lives entirely in env vars. Each store gets its own `.env` file (e.g. `backend/.env`) — no code changes needed to launch a new store.
 
 | Variable | Layer | Purpose |
 |---|---|---|
@@ -58,7 +58,7 @@ Store identity lives entirely in env vars. Per-store files live in `stores/<slug
 
 Frontend components read store identity from `frontend/src/config/store.ts` — import `STORE_NAME` / `STORE_TAGLINE` from there, never hardcode.
 
-To add a new store: create `stores/<new-store>.env` and run `docker compose --env-file stores/<new-store>.env up`.
+To switch stores, update `backend/.env` with the new store's values and restart the stack.
 
 ---
 
@@ -104,7 +104,7 @@ See `resources/backend.md` for full detail. Key points:
 - `backend/app/config.py` — All env vars via Pydantic `Settings`; import as `from app.config import settings`
 - `backend/app/constants.py` — `ORDER_STATUSES` list; used by orders router for validation
 - `backend/app/database.py` — SQLAlchemy engine + `get_db` dependency
-- **Routers** (`backend/app/routers/`) — thin handlers only; auth via `get_current_active_user` / `get_admin_user` from `utils/auth.py`
+- **Routers** (`backend/app/routers/`) — thin handlers only; auth via `get_current_active_user` (user) / `get_admin_user` (admin) from `utils/auth.py`
 - **Services** (`backend/app/services/`) — all business logic here; `menu_service.py` is the DynamoDB implementation for production
 - **Models** (`backend/app/models/`) — SQLAlchemy ORM (the DB schema)
 - **Schemas** (`backend/app/schemas/`) — Pydantic request/response models; kept separate from ORM models
