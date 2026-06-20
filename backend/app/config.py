@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     STORE_NAME: str = ""
+    STORE_SLUG: str = "phin-and-beans"  # matches the filename in backend/menus/<slug>.csv
     STORE_DOMAIN: str = ""  # prod domain e.g. "phinandbeans.com"; blank = no extra CORS origin
 
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/store"

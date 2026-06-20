@@ -1,0 +1,18 @@
+item_id,name,category,description,price,image_url,is_available,tags,customizations
+,Espresso,espresso,Rich concentrated single shot of espresso.,3.50,,true,hot|classic,shots=1|2|3
+,Cappuccino,espresso,Double espresso topped with velvety steamed milk foam.,5.00,,true,hot|popular,milk=Whole|Oat|Almond;size=12oz|16oz
+,Latte,espresso,Smooth espresso with steamed milk — simple and perfect.,5.50,,true,hot|iced,milk=Whole|Oat|Almond|Soy;size=12oz|16oz|20oz
+,Flat White,espresso,Ristretto shots with micro-foam steamed milk.,5.50,,true,hot|strong,milk=Whole|Oat;size=8oz|12oz
+,Cortado,espresso,Equal parts espresso and steamed milk — no foam.,4.50,,true,hot|small,
+,Matcha Latte,matcha,Ceremonial-grade matcha from Kyoto whisked with steamed milk.,5.50,,true,hot|iced|popular,milk=Whole|Oat|Coconut;size=12oz|16oz;sweetness=None|Half|Full
+,Iced Matcha,matcha,Shaken matcha over ice with your choice of milk.,6.00,,true,iced|popular,milk=Oat|Coconut|Almond;sweetness=None|Half|Full
+,Cold Brew,cold,12-hour cold steeped for smooth never bitter coffee.,5.00,,true,iced|popular,size=12oz|16oz|24oz
+,Iced Americano,cold,Double espresso over ice topped with cold water.,4.50,,true,iced,shots=2|3;size=12oz|16oz|24oz
+,Vanilla Sweet Cream Cold Brew,cold,Cold brew topped with vanilla sweet cream cold foam.,6.50,,true,iced|sweet|popular,size=16oz|24oz
+,Chai Latte,tea,Spiced masala chai concentrate with steamed milk.,5.00,,true,hot|spiced,milk=Whole|Oat|Almond;size=12oz|16oz
+,London Fog,tea,Earl Grey tea latte with vanilla and steamed milk.,5.00,,true,hot|floral,milk=Whole|Oat;size=12oz|16oz
+,Butter Croissant,pastry,Flaky golden butter croissant baked fresh daily.,4.00,,true,popular|fresh,
+,Pain au Chocolat,pastry,Dark chocolate tucked inside buttery laminated pastry.,4.50,,true,sweet,
+,Blueberry Muffin,pastry,Moist muffin packed with fresh blueberries and lemon zest.,4.00,,true,sweet|fresh,
+,Avocado Toast,food,Smashed avo on sourdough with chili flakes and microgreens.,9.50,,true,brunch|popular,
+,Egg & Cheese Sandwich,food,Cage-free egg with aged cheddar on a toasted brioche bun.,8.00,,true,breakfast,

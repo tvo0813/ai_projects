@@ -1,5 +1,8 @@
 name: CI / CD
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────────────────────────
 on:
   pull_request:
     branches: [main, develop]
@@ -10,72 +13,102 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared constants
+# ─────────────────────────────────────────────────────────────────────────────
 env:
-  AWS_REGION: us-east-1
-  ECR_REPO_DEV: ${{ vars.ECR_REPO_DEV }}
-  ECR_REPO_PROD: ${{ vars.ECR_REPO_PROD }}
+  AWS_REGION:  us-east-1
+  # Single shared backend ECR repo — same image runs for all stores
+  ECR_REPO: ${{ vars.ECR_REPO }}
 
-# ─────────────────────────────────────────────
-# JOB 1: Build & push Docker image to ECR
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1 — Build & push backend image (shared across all stores)
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  build:
-    name: Build
+  build-backend:
+    name: Build backend
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
+      image_uri: ${{ steps.meta.outputs.image_uri }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image tag
         id: meta
-        run: echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+        run: |
+          TAG=${{ github.sha }}
+          echo "image_tag=${TAG}"                        >> "$GITHUB_OUTPUT"
+          echo "image_uri=${{ env.ECR_REPO }}:${TAG}"   >> "$GITHUB_OUTPUT"
 
-      - name: Build and push backend image (dev ECR)
+      - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
           tags: |
-            ${{ env.ECR_REPO_DEV }}:${{ steps.meta.outputs.image_tag }}
-            ${{ env.ECR_REPO_DEV }}:latest
-          cache-from: type=registry,ref=${{ env.ECR_REPO_DEV }}:latest
-          cache-to: type=inline
+            ${{ env.ECR_REPO }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.ECR_REPO }}:latest
+          cache-from: type=registry,ref=${{ env.ECR_REPO }}:latest
+          cache-to:   type=inline
 
-      - name: Build frontend
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Build frontends (one per store; bakes VITE_ env vars)
+  # ─────────────────────────────────────────────────────────────────────────
+  build-frontends:
+    name: Build frontends
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        store:
+          - slug:     phin-and-beans
+            name:     "Phin and Beans"
+            tagline:  "Vietnamese-inspired coffee & tea, crafted with care."
+          - slug:     phin-drips
+            name:     "Phin Drips"
+            tagline:  "Bold Vietnamese drip coffee, your way."
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Build frontend — ${{ matrix.store.slug }}
         working-directory: frontend
         env:
-          VITE_STORE_NAME: ${{ vars.STORE_NAME }}
-          VITE_STORE_TAGLINE: ${{ vars.STORE_TAGLINE }}
+          VITE_STORE_NAME:    ${{ matrix.store.name }}
+          VITE_STORE_TAGLINE: ${{ matrix.store.tagline }}
         run: |
           npm ci
           npm run build
 
-      - name: Upload frontend dist
+      - name: Upload frontend dist — ${{ matrix.store.slug }}
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-dist
-          path: frontend/dist
-          retention-days: 1
+          name:            frontend-dist-${{ matrix.store.slug }}
+          path:            frontend/dist
+          retention-days:  1
 
-# ─────────────────────────────────────────────
-# JOB 2: Backend unit tests
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Backend unit tests
+  # ─────────────────────────────────────────────────────────────────────────
   unit-test:
-    name: Unit Tests
+    name: Unit tests
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-backend
     defaults:
       run:
         working-directory: backend
@@ -92,9 +125,9 @@ jobs:
 
       - name: Run pytest
         env:
-          STORE_NAME: "Test Store"
-          SECRET_KEY: "test-secret-key"
-          DATABASE_URL: ""   # conftest uses SQLite
+          STORE_NAME:   "Test Store"
+          SECRET_KEY:   "test-secret-key"
+          DATABASE_URL: ""    # conftest uses SQLite in-memory
         run: pytest --tb=short -q
 
       - name: Upload test results
@@ -104,112 +137,166 @@ jobs:
           name: pytest-results
           path: backend/.pytest_cache
 
-# ─────────────────────────────────────────────
-# JOB 3: Deploy to dev
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 4 — Deploy dev (both stores, runs after tests pass)
+  # ─────────────────────────────────────────────────────────────────────────
   deploy-dev:
-    name: Deploy → Dev
+    name: Deploy dev — ${{ matrix.store.slug }}
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: [build-backend, build-frontends, unit-test]
     environment: dev
+    strategy:
+      # Deploy stores sequentially so Terraform locks don't collide
+      max-parallel: 1
+      matrix:
+        store:
+          - slug:               phin-and-beans
+            tf_dir:             terraform/envs/phin-and-beans/dev
+            private_subnet_var: DEV_PAB_PRIVATE_SUBNET_IDS
+            ecs_sg_var:         DEV_PAB_ECS_SG_ID
+            db_password_secret: DEV_PAB_DB_PASSWORD
+            secret_key_secret:  DEV_PAB_SECRET_KEY
+            stripe_secret:      DEV_PAB_STRIPE_SECRET_KEY
+            stripe_webhook:     DEV_PAB_STRIPE_WEBHOOK_SECRET
+            square_token:       DEV_PAB_SQUARE_ACCESS_TOKEN
+            square_location:    DEV_PAB_SQUARE_LOCATION_ID
+            task_def:           phin-and-beans-dev-backend
+          - slug:               phin-drips
+            tf_dir:             terraform/envs/phin-drips/dev
+            private_subnet_var: DEV_PD_PRIVATE_SUBNET_IDS
+            ecs_sg_var:         DEV_PD_ECS_SG_ID
+            db_password_secret: DEV_PD_DB_PASSWORD
+            secret_key_secret:  DEV_PD_SECRET_KEY
+            stripe_secret:      DEV_PD_STRIPE_SECRET_KEY
+            stripe_webhook:     DEV_PD_STRIPE_WEBHOOK_SECRET
+            square_token:       DEV_PD_SQUARE_ACCESS_TOKEN
+            square_location:    DEV_PD_SQUARE_LOCATION_ID
+            task_def:           phin-drips-dev-backend
     outputs:
-      backend_url: ${{ steps.tf-output.outputs.backend_url }}
-      frontend_url: ${{ steps.tf-output.outputs.frontend_url }}
+      # GitHub Actions doesn't support per-matrix outputs cleanly;
+      # E2E job reads store URLs from Terraform after this job.
+      backend_url_phin_and_beans:  ${{ steps.tf-out.outputs.backend_url }}
+      frontend_url_phin_and_beans: ${{ steps.tf-out.outputs.frontend_url }}
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.8.5"
 
-      - name: Terraform init (dev)
-        working-directory: terraform/envs/dev
+      - name: Terraform init
+        working-directory: ${{ matrix.store.tf_dir }}
         run: terraform init
 
-      - name: Terraform apply (dev)
-        working-directory: terraform/envs/dev
+      - name: Terraform apply
+        working-directory: ${{ matrix.store.tf_dir }}
         env:
-          TF_VAR_db_password: ${{ secrets.DEV_DB_PASSWORD }}
-          TF_VAR_secret_key: ${{ secrets.DEV_SECRET_KEY }}
-          TF_VAR_stripe_secret_key: ${{ secrets.DEV_STRIPE_SECRET_KEY }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets.DEV_STRIPE_WEBHOOK_SECRET }}
-          TF_VAR_square_access_token: ${{ secrets.DEV_SQUARE_ACCESS_TOKEN }}
-          TF_VAR_square_location_id: ${{ secrets.DEV_SQUARE_LOCATION_ID }}
-          TF_VAR_store_name: ${{ vars.STORE_NAME }}
-          TF_VAR_store_domain: ${{ vars.DEV_STORE_DOMAIN }}
+          TF_VAR_backend_image:        ${{ needs.build-backend.outputs.image_uri }}
+          TF_VAR_db_password:          ${{ secrets[matrix.store.db_password_secret] }}
+          TF_VAR_secret_key:           ${{ secrets[matrix.store.secret_key_secret] }}
+          TF_VAR_stripe_secret_key:    ${{ secrets[matrix.store.stripe_secret] }}
+          TF_VAR_stripe_webhook_secret:${{ secrets[matrix.store.stripe_webhook] }}
+          TF_VAR_square_access_token:  ${{ secrets[matrix.store.square_token] }}
+          TF_VAR_square_location_id:   ${{ secrets[matrix.store.square_location] }}
         run: terraform apply -auto-approve
 
       - name: Get Terraform outputs
-        id: tf-output
-        working-directory: terraform/envs/dev
+        id: tf-out
+        working-directory: ${{ matrix.store.tf_dir }}
         run: |
-          echo "backend_url=$(terraform output -raw backend_url)" >> "$GITHUB_OUTPUT"
-          echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)" >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "backend_url=$(terraform output -raw backend_url)"        >> "$GITHUB_OUTPUT"
+          echo "frontend_url=$(terraform output -raw frontend_url)"      >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"   >> "$GITHUB_OUTPUT"
+          echo "ecs_service=$(terraform output -raw ecs_service_name)"   >> "$GITHUB_OUTPUT"
+          echo "cf_dist=$(terraform output -raw cf_distribution_id)"     >> "$GITHUB_OUTPUT"
           echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
+          echo "ecs_sg=$(terraform output -raw ecs_security_group)"      >> "$GITHUB_OUTPUT"
 
-      - name: Update ECS service with new image
+      - name: Force new ECS deployment
         run: |
           aws ecs update-service \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --service ${{ steps.tf-output.outputs.ecs_service }} \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --service ${{ steps.tf-out.outputs.ecs_service }} \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
-
           aws ecs wait services-stable \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --services ${{ steps.tf-output.outputs.ecs_service }} \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --services ${{ steps.tf-out.outputs.ecs_service }} \
             --region ${{ env.AWS_REGION }}
 
-      - name: Run DB migrations on dev
+      - name: Run DB migrations
         run: |
-          # Kick off a one-off ECS task to run alembic
           aws ecs run-task \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --task-definition coffee-tea-dev-backend \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --task-definition ${{ matrix.store.task_def }} \
             --launch-type FARGATE \
             --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.DEV_PRIVATE_SUBNET_IDS }}],securityGroups=[${{ vars.DEV_ECS_SG_ID }}],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
             --region ${{ env.AWS_REGION }}
+
+      - name: Download frontend dist — ${{ matrix.store.slug }}
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-${{ matrix.store.slug }}
+          path: frontend/dist
 
       - name: Deploy frontend to S3 + invalidate CloudFront
         run: |
-          aws s3 sync frontend/dist/ s3://${{ steps.tf-output.outputs.frontend_bucket }}/ \
+          aws s3 sync frontend/dist/ s3://${{ steps.tf-out.outputs.frontend_bucket }}/ \
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude "index.html"
-
-          aws s3 cp frontend/dist/index.html s3://${{ steps.tf-output.outputs.frontend_bucket }}/index.html \
+          aws s3 cp frontend/dist/index.html \
+            s3://${{ steps.tf-out.outputs.frontend_bucket }}/index.html \
             --cache-control "no-cache,no-store,must-revalidate"
-
           aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.tf-output.outputs.cf_dist }} \
+            --distribution-id ${{ steps.tf-out.outputs.cf_dist }} \
             --paths "/*"
 
-      - name: Download frontend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-
-# ─────────────────────────────────────────────
-# JOB 4: End-to-end tests against dev
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 5 — E2E tests (run against each store's dev deployment)
+  # ─────────────────────────────────────────────────────────────────────────
   e2e:
-    name: E2E Tests (dev)
+    name: E2E — ${{ matrix.store.slug }}
     runs-on: ubuntu-latest
     needs: deploy-dev
+    strategy:
+      matrix:
+        store:
+          - slug:    phin-and-beans
+            tf_dir:  terraform/envs/phin-and-beans/dev
+          - slug:    phin-drips
+            tf_dir:  terraform/envs/phin-drips/dev
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.5"
+
+      - name: Get store URLs
+        id: urls
+        working-directory: ${{ matrix.store.tf_dir }}
+        run: |
+          terraform init -reconfigure
+          echo "backend_url=$(terraform output -raw backend_url)"   >> "$GITHUB_OUTPUT"
+          echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -221,124 +308,134 @@ jobs:
         working-directory: tests/e2e
         run: npm ci && npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Run E2E tests — ${{ matrix.store.slug }}
         working-directory: tests/e2e
         env:
-          E2E_FRONTEND_URL: ${{ needs.deploy-dev.outputs.frontend_url }}
-          E2E_API_URL: ${{ needs.deploy-dev.outputs.backend_url }}
+          E2E_FRONTEND_URL: ${{ steps.urls.outputs.frontend_url }}
+          E2E_API_URL:      ${{ steps.urls.outputs.backend_url }}
+          E2E_STORE_SLUG:   ${{ matrix.store.slug }}
         run: npm test
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: tests/e2e/playwright-report
-          retention-days: 7
+          name:            playwright-report-${{ matrix.store.slug }}
+          path:            tests/e2e/playwright-report
+          retention-days:  7
 
-# ─────────────────────────────────────────────
-# JOB 5: Deploy to prod (manual gate)
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 6 — Deploy prod (both stores, push to main only, manual gate)
+  # ─────────────────────────────────────────────────────────────────────────
   deploy-prod:
-    name: Deploy → Prod
+    name: Deploy prod — ${{ matrix.store.slug }}
     runs-on: ubuntu-latest
     needs: e2e
-    # Only runs on push to main (not PRs), and requires manual approval
-    # via the "prod" GitHub environment protection rule
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: prod
+    strategy:
+      max-parallel: 1
+      matrix:
+        store:
+          - slug:               phin-and-beans
+            tf_dir:             terraform/envs/phin-and-beans/prod
+            db_password_secret: PROD_PAB_DB_PASSWORD
+            secret_key_secret:  PROD_PAB_SECRET_KEY
+            stripe_secret:      PROD_PAB_STRIPE_SECRET_KEY
+            stripe_webhook:     PROD_PAB_STRIPE_WEBHOOK_SECRET
+            square_token:       PROD_PAB_SQUARE_ACCESS_TOKEN
+            square_location:    PROD_PAB_SQUARE_LOCATION_ID
+            task_def:           phin-and-beans-prod-backend
+            acm_cert_secret:    PROD_PAB_ACM_CERT_ARN
+          - slug:               phin-drips
+            tf_dir:             terraform/envs/phin-drips/prod
+            db_password_secret: PROD_PD_DB_PASSWORD
+            secret_key_secret:  PROD_PD_SECRET_KEY
+            stripe_secret:      PROD_PD_STRIPE_SECRET_KEY
+            stripe_webhook:     PROD_PD_STRIPE_WEBHOOK_SECRET
+            square_token:       PROD_PD_SQUARE_ACCESS_TOKEN
+            square_location:    PROD_PD_SQUARE_LOCATION_ID
+            task_def:           phin-drips-prod-backend
+            acm_cert_secret:    PROD_PD_ACM_CERT_ARN
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Promote image to prod ECR
-        run: |
-          docker pull ${{ env.ECR_REPO_DEV }}:${{ github.sha }}
-          docker tag  ${{ env.ECR_REPO_DEV }}:${{ github.sha }} ${{ env.ECR_REPO_PROD }}:${{ github.sha }}
-          docker tag  ${{ env.ECR_REPO_DEV }}:${{ github.sha }} ${{ env.ECR_REPO_PROD }}:latest
-          docker push ${{ env.ECR_REPO_PROD }}:${{ github.sha }}
-          docker push ${{ env.ECR_REPO_PROD }}:latest
+          aws-region:            ${{ env.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.8.5"
 
-      - name: Terraform init (prod)
-        working-directory: terraform/envs/prod
+      - name: Terraform init
+        working-directory: ${{ matrix.store.tf_dir }}
         run: terraform init
 
-      - name: Terraform apply (prod)
-        working-directory: terraform/envs/prod
+      - name: Terraform apply
+        working-directory: ${{ matrix.store.tf_dir }}
         env:
-          TF_VAR_db_password: ${{ secrets.PROD_DB_PASSWORD }}
-          TF_VAR_secret_key: ${{ secrets.PROD_SECRET_KEY }}
-          TF_VAR_stripe_secret_key: ${{ secrets.PROD_STRIPE_SECRET_KEY }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets.PROD_STRIPE_WEBHOOK_SECRET }}
-          TF_VAR_square_access_token: ${{ secrets.PROD_SQUARE_ACCESS_TOKEN }}
-          TF_VAR_square_location_id: ${{ secrets.PROD_SQUARE_LOCATION_ID }}
-          TF_VAR_store_name: ${{ vars.STORE_NAME }}
-          TF_VAR_store_domain: ${{ vars.PROD_STORE_DOMAIN }}
-          TF_VAR_domain_aliases: ${{ vars.PROD_DOMAIN_ALIASES }}
-          TF_VAR_acm_certificate_arn: ${{ secrets.PROD_ACM_CERT_ARN }}
+          TF_VAR_backend_image:        ${{ needs.build-backend.outputs.image_uri }}
+          TF_VAR_db_password:          ${{ secrets[matrix.store.db_password_secret] }}
+          TF_VAR_secret_key:           ${{ secrets[matrix.store.secret_key_secret] }}
+          TF_VAR_stripe_secret_key:    ${{ secrets[matrix.store.stripe_secret] }}
+          TF_VAR_stripe_webhook_secret:${{ secrets[matrix.store.stripe_webhook] }}
+          TF_VAR_square_access_token:  ${{ secrets[matrix.store.square_token] }}
+          TF_VAR_square_location_id:   ${{ secrets[matrix.store.square_location] }}
+          TF_VAR_acm_certificate_arn:  ${{ secrets[matrix.store.acm_cert_secret] }}
         run: terraform apply -auto-approve
 
-      - name: Get prod Terraform outputs
-        id: tf-output
-        working-directory: terraform/envs/prod
+      - name: Get Terraform outputs
+        id: tf-out
+        working-directory: ${{ matrix.store.tf_dir }}
         run: |
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)" >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"   >> "$GITHUB_OUTPUT"
+          echo "ecs_service=$(terraform output -raw ecs_service_name)"   >> "$GITHUB_OUTPUT"
+          echo "cf_dist=$(terraform output -raw cf_distribution_id)"     >> "$GITHUB_OUTPUT"
           echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
+          echo "ecs_sg=$(terraform output -raw ecs_security_group)"      >> "$GITHUB_OUTPUT"
 
-      - name: Update ECS service (prod)
+      - name: Force new ECS deployment
         run: |
           aws ecs update-service \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --service ${{ steps.tf-output.outputs.ecs_service }} \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --service ${{ steps.tf-out.outputs.ecs_service }} \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
-
           aws ecs wait services-stable \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --services ${{ steps.tf-output.outputs.ecs_service }} \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --services ${{ steps.tf-out.outputs.ecs_service }} \
             --region ${{ env.AWS_REGION }}
 
-      - name: Run DB migrations (prod)
+      - name: Run DB migrations
         run: |
           aws ecs run-task \
-            --cluster ${{ steps.tf-output.outputs.ecs_cluster }} \
-            --task-definition coffee-tea-prod-backend \
+            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
+            --task-definition ${{ matrix.store.task_def }} \
             --launch-type FARGATE \
             --overrides '{"containerOverrides":[{"name":"backend","command":["alembic","upgrade","head"]}]}' \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.PROD_PRIVATE_SUBNET_IDS }}],securityGroups=[${{ vars.PROD_ECS_SG_ID }}],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
             --region ${{ env.AWS_REGION }}
 
-      - name: Download frontend dist
+      - name: Download frontend dist — ${{ matrix.store.slug }}
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
+          name: frontend-dist-${{ matrix.store.slug }}
           path: frontend/dist
 
-      - name: Deploy frontend to prod S3 + invalidate CloudFront
+      - name: Deploy frontend to S3 + invalidate CloudFront
         run: |
-          aws s3 sync frontend/dist/ s3://${{ steps.tf-output.outputs.frontend_bucket }}/ \
+          aws s3 sync frontend/dist/ s3://${{ steps.tf-out.outputs.frontend_bucket }}/ \
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude "index.html"
-
-          aws s3 cp frontend/dist/index.html s3://${{ steps.tf-output.outputs.frontend_bucket }}/index.html \
+          aws s3 cp frontend/dist/index.html \
+            s3://${{ steps.tf-out.outputs.frontend_bucket }}/index.html \
             --cache-control "no-cache,no-store,must-revalidate"
-
           aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.tf-output.outputs.cf_dist }} \
+            --distribution-id ${{ steps.tf-out.outputs.cf_dist }} \
             --paths "/*"

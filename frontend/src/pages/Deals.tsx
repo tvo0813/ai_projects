@@ -1,63 +1,70 @@
-import { Link } from 'react-router-dom'
-import { useAuthStore } from '../store/useAuthStore'
 import SpinWheel from '../components/deals/SpinWheel'
 
-export default function Deals() {
-  const { user } = useAuthStore()
+const HOW_STEPS = [
+  { step: '1', title: 'Come visit us', desc: 'Stop by any of our locations for your daily coffee or tea.' },
+  { step: '2', title: 'Spin daily', desc: 'One free spin per day — no account needed.' },
+  { step: '3', title: 'Win rewards', desc: 'Discounts, free drinks, free items, and surprise bonuses.' },
+  { step: '4', title: 'Redeem in store', desc: 'Show your winning code to our barista when you order.' },
+]
 
+export default function Deals() {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, var(--brown-800), var(--green-matcha))',
-        color: 'var(--cream)',
-        padding: '3rem 1.5rem',
+    <div style={{ minHeight: '100vh', background: 'var(--white)' }}>
+      {/* Header */}
+      <section style={{
+        background: 'var(--green-dark)',
+        color: 'var(--white)',
+        padding: '3.5rem 1.5rem',
         textAlign: 'center',
       }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎰 Deals & Rewards</h1>
-        <p style={{ color: 'var(--brown-200)', fontSize: '1.1rem' }}>Spin the wheel for your chance to win!</p>
-      </div>
+        <p className="section-label" style={{ color: 'var(--green-light)', marginBottom: '0.75rem' }}>
+          Daily rewards
+        </p>
+        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--white)', marginBottom: '0.5rem' }}>
+          Spin & Win
+        </h1>
+        <p style={{ color: 'var(--green-light)', fontSize: '1.05rem' }}>
+          Spin the wheel every day for your chance at free drinks and discounts.
+        </p>
+      </section>
 
       <div className="container" style={{ padding: '3rem 1.5rem' }}>
-        {!user && (
-          <div style={{
-            background: 'var(--brown-100)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1.5rem',
-            textAlign: 'center',
-            marginBottom: '2rem',
-            border: '1.5px solid var(--brown-300)',
-          }}>
-            <p style={{ marginBottom: '1rem', fontWeight: 500 }}>
-              🔒 Log in to spin the wheel and claim deals
-            </p>
-            <Link to="/login" className="btn btn-primary">Login to Spin</Link>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {/* Wheel */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4rem' }}>
           <SpinWheel />
         </div>
 
-        <div style={{ marginTop: '4rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.8rem' }}>How It Works</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-            {[
-              { step: '1', title: 'Create Account', desc: 'Sign up free — takes 30 seconds.' },
-              { step: '2', title: 'Spin Daily', desc: 'One free spin per day. Earn more by ordering.' },
-              { step: '3', title: 'Win Rewards', desc: 'Discounts, free items, and surprise bonuses.' },
-              { step: '4', title: 'Redeem at Checkout', desc: 'Use your unique code when you order online.' },
-            ].map((s) => (
-              <div key={s.step} className="card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+        {/* How it works */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '3.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <p className="section-label" style={{ marginBottom: '0.5rem' }}>Simple</p>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2rem)' }}>How it works</h2>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '1.5rem',
+            maxWidth: 860,
+            margin: '0 auto',
+          }}>
+            {HOW_STEPS.map((s) => (
+              <div key={s.step} style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: 48, height: 48, borderRadius: '50%',
-                  background: 'var(--brown-500)', color: 'white',
+                  width: 44, height: 44,
+                  borderRadius: '50%',
+                  background: 'var(--green-dark)',
+                  color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', fontWeight: 700, margin: '0 auto 1rem',
+                  fontWeight: 700, fontSize: '1rem',
+                  margin: '0 auto 1rem',
                 }}>
                   {s.step}
                 </div>
-                <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{s.title}</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{s.desc}</p>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'inherit', marginBottom: '0.4rem' }}>
+                  {s.title}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{s.desc}</p>
               </div>
             ))}
           </div>

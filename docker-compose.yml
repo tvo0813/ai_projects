@@ -1,37 +1,43 @@
 version: '3.9'
 
+# Usage:
+#   docker compose --env-file stores/phin-and-beans.env up
+#   docker compose --env-file stores/phin-drips.env up
+
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-phin_and_beans}
-      POSTGRES_USER: postgres
+      POSTGRES_DB:       ${POSTGRES_DB:-phin_and_beans}
+      POSTGRES_USER:     postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test:     ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout:  5s
+      retries:  5
 
   backend:
     build: ./backend
     ports:
       - "8000:8000"
     environment:
-      STORE_NAME: ${STORE_NAME:-Phin and Beans}
-      STORE_DOMAIN: ${STORE_DOMAIN:-}
-      DATABASE_URL: postgresql://postgres:password@db:5432/${POSTGRES_DB:-phin_and_beans}
-      SECRET_KEY: ${SECRET_KEY:-change-this-in-production-use-a-long-random-string}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN:-}
-      SQUARE_LOCATION_ID: ${SQUARE_LOCATION_ID:-}
-      DYNAMODB_TABLE_MENU: ${DYNAMODB_TABLE_MENU:-phin-and-beans-menu}
+      STORE_NAME:           ${STORE_NAME:-Phin and Beans}
+      STORE_SLUG:           ${STORE_SLUG:-phin-and-beans}
+      STORE_DOMAIN:         ${STORE_DOMAIN:-}
+      DATABASE_URL:         postgresql://postgres:password@db:5432/${POSTGRES_DB:-phin_and_beans}
+      SECRET_KEY:           ${SECRET_KEY:-change-this-in-production}
+      STRIPE_SECRET_KEY:    ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET:${STRIPE_WEBHOOK_SECRET:-}
+      SQUARE_ACCESS_TOKEN:  ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID:   ${SQUARE_LOCATION_ID:-}
+      DYNAMODB_TABLE_MENU:  ${DYNAMODB_TABLE_MENU:-phin-and-beans-menu}
       DYNAMODB_TABLE_DEALS: ${DYNAMODB_TABLE_DEALS:-phin-and-beans-deals}
+      ENVIRONMENT:          development
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +50,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_STORE_NAME: ${STORE_NAME:-Phin and Beans}
+      VITE_STORE_NAME:    ${STORE_NAME:-Phin and Beans}
       VITE_STORE_TAGLINE: ${STORE_TAGLINE:-Vietnamese-inspired coffee & tea, crafted with care.}
     depends_on:
       - backend

@@ -1,30 +1,41 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import Navbar from './components/layout/Navbar'
+import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import Deals from './pages/Deals'
-import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Orders from './pages/Orders'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
 export default function App() {
   return (
     <>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#1E3932',
+            color: '#fff',
+            borderRadius: '9999px',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            padding: '0.65rem 1.25rem',
+          },
+          success: { iconTheme: { primary: '#00704A', secondary: '#fff' } },
+        }}
+      />
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/menu" element={<Menu />} />
-        <Route path="/deals" element={<Deals />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/"         element={<Home />} />
+        <Route path="/menu"     element={<Menu />} />
+        <Route path="/deals"    element={<Deals />} />
+        <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin"    element={<AdminDashboard />} />
       </Routes>
+      <Footer />
     </>
   )
 }

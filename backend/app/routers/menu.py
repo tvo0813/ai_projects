@@ -4,29 +4,14 @@ from typing import List, Optional
 from ..schemas.menu import MenuItem, MenuItemCreate, MenuItemUpdate
 from ..utils.auth import get_admin_user
 from ..models.user import User
+from ..config import settings
+from ..services.menu_loader import load_menu_from_csv
 
 router = APIRouter(prefix="/api/menu", tags=["menu"])
 
-# In-memory store; replace with menu_service.py DynamoDB calls when ENVIRONMENT != development
-_menu_db: dict = {}
-
-
-def _seed_menu():
-    items = [
-        MenuItem(item_id=str(uuid4()), name="Espresso", category="espresso", description="Rich single shot of espresso.", price=3.50, image_url="/images/espresso.jpg", is_available=True, config_json={"shots": ["1", "2", "3"]}, tags=["hot", "classic"]),
-        MenuItem(item_id=str(uuid4()), name="Cappuccino", category="espresso", description="Espresso with steamed milk foam.", price=5.00, image_url="/images/cappuccino.jpg", is_available=True, config_json={"milk": ["Whole", "Oat", "Almond"], "size": ["12oz", "16oz"]}, tags=["hot", "popular"]),
-        MenuItem(item_id=str(uuid4()), name="Matcha Latte", category="matcha", description="Ceremonial grade matcha with steamed milk.", price=5.50, image_url="/images/matcha.jpg", is_available=True, config_json={"milk": ["Whole", "Oat", "Coconut"], "size": ["12oz", "16oz"], "sweetness": ["None", "Half", "Full"]}, tags=["hot", "iced", "popular"]),
-        MenuItem(item_id=str(uuid4()), name="Cold Brew", category="cold", description="12-hour cold steeped smooth coffee.", price=5.00, image_url="/images/coldbrew.jpg", is_available=True, config_json={"size": ["12oz", "16oz", "24oz"]}, tags=["iced", "popular"]),
-        MenuItem(item_id=str(uuid4()), name="Chai Latte", category="tea", description="Spiced masala chai with steamed milk.", price=5.00, image_url="/images/chai.jpg", is_available=True, config_json={"milk": ["Whole", "Oat", "Almond"], "size": ["12oz", "16oz"]}, tags=["hot", "spiced"]),
-        MenuItem(item_id=str(uuid4()), name="Croissant", category="pastry", description="Buttery, flaky French croissant.", price=4.00, image_url="/images/croissant.jpg", is_available=True, config_json={}, tags=["food", "popular"]),
-        MenuItem(item_id=str(uuid4()), name="Avocado Toast", category="food", description="Smashed avo on sourdough with chili flakes.", price=9.50, image_url="/images/avocado.jpg", is_available=True, config_json={}, tags=["food", "brunch"]),
-        MenuItem(item_id=str(uuid4()), name="Iced Americano", category="cold", description="Double espresso over ice with water.", price=4.50, image_url="/images/americano.jpg", is_available=True, config_json={"shots": ["2", "3"], "size": ["12oz", "16oz", "24oz"]}, tags=["iced"]),
-    ]
-    for item in items:
-        _menu_db[item.item_id] = item
-
-
-_seed_menu()
+# Seeded from CSV at import time; admin CRUD layered on top.
+# In production (ENVIRONMENT != development) swap calls to menu_service.py DynamoDB functions.
+_menu_db: dict = load_menu_from_csv(settings.STORE_SLUG)
 
 
 @router.get("/", response_model=List[MenuItem])

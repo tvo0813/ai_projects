@@ -1,0 +1,17 @@
+item_id,name,category,description,price,image_url,is_available,tags,customizations
+,Phin Drip Classic,drip,Traditional Vietnamese phin filter coffee — bold and aromatic.,4.00,,true,hot|signature|popular,strength=Regular|Strong|Extra Strong
+,Phin Drip Iced,drip,Vietnamese phin coffee brewed hot then poured over ice.,4.50,,true,iced|signature|popular,strength=Regular|Strong|Extra Strong
+,Ca Phe Sua Da,drip,Vietnamese iced coffee with sweetened condensed milk.,5.00,,true,iced|sweet|signature,strength=Regular|Strong
+,Ca Phe Trung,drip,Egg coffee — rich egg yolk cream atop strong phin brew.,6.00,,true,hot|signature|special,
+,Coconut Cold Brew,cold,Coarse-ground cold brew steeped 18 hours in coconut water.,5.50,,true,iced|popular,size=12oz|16oz|24oz
+,Iced Americano,cold,Double espresso over ice topped with cold water.,4.50,,true,iced,shots=2|3;size=12oz|16oz|24oz
+,Matcha Latte,matcha,Ceremonial-grade matcha from Kagoshima whisked with milk.,5.50,,true,hot|iced,milk=Whole|Oat|Coconut;size=12oz|16oz;sweetness=None|Half|Full
+,Iced Matcha,matcha,Shaken matcha over ice — bold and grassy.,6.00,,true,iced|popular,milk=Oat|Coconut|Almond;sweetness=None|Half|Full
+,Jasmine Milk Tea,tea,Jasmine green tea with house-made oat milk and lychee pearls.,5.50,,true,iced|popular,sweetness=None|Half|Full;pearls=Yes|No
+,Taro Milk Tea,tea,Creamy house-made taro with oat milk and tapioca pearls.,5.50,,true,iced|popular,sweetness=None|Half|Full;pearls=Yes|No
+,Pandan Latte,tea,Fragrant pandan leaf latte with steamed oat milk.,5.00,,true,hot|iced|special,milk=Whole|Oat;sweetness=None|Half|Full
+,Banh Mi,food,Vietnamese banh mi with house-made pickled veg and pate.,9.00,,true,lunch|signature|popular,protein=Pork|Chicken|Tofu
+,Sticky Rice Bun,food,Glutinous rice bun filled with savory pork and mushroom.,5.50,,true,breakfast|signature,
+,Pandan Waffle,pastry,Crispy pandan waffle with coconut cream dip.,5.00,,true,sweet|signature|popular,
+,Sesame Ball,pastry,Deep-fried glutinous rice ball filled with red bean paste.,3.50,,true,sweet|popular,quantity=1|3|6
+,Butter Croissant,pastry,Flaky golden butter croissant baked fresh daily.,4.00,,true,fresh,

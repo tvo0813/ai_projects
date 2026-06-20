@@ -42,23 +42,48 @@ URLs: Frontend → 5173, Backend API → 8000, Swagger → http://localhost:8000
 
 ---
 
-## Multi-Store Config System
+## Multi-Store System
 
-Store identity lives entirely in env vars. Each store gets its own `.env` file (e.g. `backend/.env`) — no code changes needed to launch a new store.
+**Active stores:** `phin-and-beans` (Phin and Beans), `phin-drips` (Phin Drips)
+**Registry:** `stores/stores.json` — source of truth for all store slugs, names, domains, DB names
+
+### Local dev — pick a store
+```bash
+docker compose --env-file stores/phin-and-beans.env up
+docker compose --env-file stores/phin-drips.env up
+```
+
+### Per-store env files (`stores/<slug>.env`)
 
 | Variable | Layer | Purpose |
 |---|---|---|
-| `STORE_NAME` | Backend | API title, health endpoint, Square idempotency key prefix |
-| `STORE_DOMAIN` | Backend | Added to CORS allowed origins; blank = skip |
-| `VITE_STORE_NAME` | Frontend | Tab title, navbar, hero h1, admin panel |
-| `VITE_STORE_TAGLINE` | Frontend | Hero section tagline |
+| `STORE_NAME` | Backend | API title, Square idempotency key prefix |
+| `STORE_DOMAIN` | Backend | CORS allowed origin; blank = skip |
+| `STORE_TAGLINE` | Frontend (Docker) | Hero tagline passed as `VITE_STORE_TAGLINE` |
+| `VITE_STORE_NAME` | Frontend build | Baked in at `npm run build` |
+| `VITE_STORE_TAGLINE` | Frontend build | Baked in at `npm run build` |
 | `POSTGRES_DB` | Docker/DB | PostgreSQL database name |
-| `DYNAMODB_TABLE_MENU` | Backend | DynamoDB menu table (prod only) |
-| `DYNAMODB_TABLE_DEALS` | Backend | DynamoDB deals table (prod only) |
+| `DYNAMODB_TABLE_MENU` | Backend | DynamoDB menu table (prod) |
+| `DYNAMODB_TABLE_DEALS` | Backend | DynamoDB deals table (prod) |
 
-Frontend components read store identity from `frontend/src/config/store.ts` — import `STORE_NAME` / `STORE_TAGLINE` from there, never hardcode.
+Frontend components read store identity from `frontend/src/config/store.ts` — always import from there, never hardcode.
 
-To switch stores, update `backend/.env` with the new store's values and restart the stack.
+### Terraform layout (fully isolated per store × env)
+```
+terraform/envs/
+├── phin-and-beans/dev/   VPC: 10.0.0.0/16   state: phin-and-beans/dev/terraform.tfstate
+├── phin-and-beans/prod/  VPC: 10.1.0.0/16   state: phin-and-beans/prod/terraform.tfstate
+├── phin-drips/dev/       VPC: 10.2.0.0/16   state: phin-drips/dev/terraform.tfstate
+└── phin-drips/prod/      VPC: 10.3.0.0/16   state: phin-drips/prod/terraform.tfstate
+```
+Each env has its own VPC, RDS, ECS service, Secrets Manager secret, S3 bucket, and CloudFront distribution. All use the same single backend ECR image — store identity is injected via env vars at ECS task startup.
+
+### Adding a new store
+1. Add entry to `stores/stores.json`
+2. Create `stores/<slug>.env`
+3. Copy `terraform/envs/phin-drips/` → `terraform/envs/<slug>/`, update locals + VPC CIDRs + state key + db_name
+4. Add store to `matrix` in both `deploy-dev` and `deploy-prod` jobs in `.github/workflows/ci-cd.yml`
+5. Add GitHub secrets using pattern `DEV_{PREFIX}_*` / `PROD_{PREFIX}_*`
 
 ---
 
@@ -91,8 +116,9 @@ See `resources/frontend.md` for full detail. Key points:
 - **API clients** in `frontend/src/api/`:
   - `client.ts` — Axios base instance; reads token via `useAuthStore.getState().token`; 401 → calls `logout()` + redirect to `/login`
   - `auth.ts`, `menu.ts`, `orders.ts`, `deals.ts` — domain-specific endpoints with TypeScript types
-- **Components** in `frontend/src/components/` by domain: `layout/`, `menu/`, `cart/`, `deals/`
-- **CSS tokens** in `frontend/src/index.css` — brown palette, matcha green, cream, shadows, radii. All new UI must use these variables.
+- **Components** in `frontend/src/components/` by domain: `layout/` (Navbar + Footer), `menu/`, `cart/`, `deals/`
+- **Design system** — Starbucks-inspired: `--green-dark` (#1E3932) headers/hero, `--green` (#00704A) primary CTAs, `--gold` for loyalty, `--cream` page background, white cards. See `resources/frontend.md` for full token list.
+- **Footer** — `components/layout/Footer.tsx` — minimal single-row layout (copyright left, nav links right). Davien-style: no heavy decoration, just text links and copyright.
 
 ---
 
@@ -110,8 +136,12 @@ See `resources/backend.md` for full detail. Key points:
 - **Schemas** (`backend/app/schemas/`) — Pydantic request/response models; kept separate from ORM models
 
 ### Menu storage
-- `ENVIRONMENT=development` → `routers/menu.py` uses an in-memory dict seeded at startup
+- `ENVIRONMENT=development` → `routers/menu.py` loads from `backend/menus/<STORE_SLUG>.csv` via `services/menu_loader.py` into an in-memory dict at startup
 - Production → wire `menu_service.py` DynamoDB functions into the router
+- CSV format: `item_id,name,category,description,price,image_url,is_available,tags,customizations`
+  - `tags` pipe-separated: `hot|iced|popular`
+  - `customizations` key=values: `milk=Whole|Oat;size=12oz|16oz`
+  - blank `item_id` → stable UUID derived from (store_slug + name), survives restarts
 
 ---
 

@@ -121,31 +121,36 @@ server: {
 
 ## CSS Design Tokens (`index.css`)
 
-All UI must use these variables:
+The design system is Starbucks-inspired: dark green primary, light green accents, loyalty gold, off-white/cream backgrounds, clean white cards. All new UI must use these tokens.
 
 ```css
-/* Browns (coffee theme) */
---brown-900: #3b1a0a;
---brown-700: #6b3a1f;
---brown-500: #a0522d;
---brown-300: #d2956a;
---brown-100: #f5e6d8;
+/* Green palette (primary) */
+--green:        #00704A;   /* primary CTA */
+--green-dark:   #1E3932;   /* headers, navbar, hero backgrounds */
+--green-mid:    #2E6D5E;   /* secondary backgrounds */
+--green-hover:  #005F3E;   /* hover state for green buttons */
+--green-light:  #D4E9E2;   /* light accent backgrounds */
+--green-xlight: #EEF7F2;   /* very light backgrounds */
 
-/* Accents */
---green-matcha: #4a7c59;
---cream: #faf6f0;
---cream-dark: #f0e8dc;
+/* Loyalty gold */
+--gold:         #CBA258;
+--gold-light:   #F5E7CA;
 
-/* Shadows */
---shadow-sm: 0 1px 3px rgba(0,0,0,.08);
---shadow-md: 0 4px 12px rgba(0,0,0,.12);
---shadow-lg: 0 8px 24px rgba(0,0,0,.16);
+/* Neutrals */
+--cream:        #F2F0EB;   /* page background */
+--cream-dark:   #E6E3D9;   /* subtle section backgrounds */
+--white:        #FFFFFF;   /* card backgrounds */
+--border:       #E0DFDB;   /* borders */
 
-/* Radii */
---radius-sm: 4px;
---radius-md: 8px;
---radius-lg: 16px;
---radius-full: 9999px;
+/* Text */
+--text-primary:   #1E3932;
+--text-secondary: #4A4A4A;
+--text-muted:     #767676;
 ```
 
-Global utility classes: `.btn`, `.btn-primary`, `.btn-outline`, `.btn-ghost`, `.card`, `.badge-*`, `.container` (max-width 1200px)
+Button classes: `.btn`, `.btn-primary` (green), `.btn-outline` (dark green border), `.btn-outline-white` (white border for dark backgrounds), `.btn-ghost`
+Category filter classes: `.pill`, `.pill.active`
+Section label: `.section-label` (small-caps, green, uppercase)
+Card: `.card` (white bg, border, shadow)
+Badges: `.badge-green`, `.badge-gold`, `.badge-red`, `.badge-gray`
+Container: `.container` (max-width 1200px)

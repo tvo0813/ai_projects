@@ -4,28 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A multi-store coffee & tea shop web app — the same codebase powers multiple stores (e.g. "Phin and Beans", "Phin Drip") via environment variables. React 18 + Vite + TypeScript frontend, Python FastAPI backend, PostgreSQL database, with Stripe payment and Square POS integrations.
+A multi-store coffee & tea shop platform — one codebase, N independent deployments. Each store gets its own AWS infrastructure (VPC, RDS, ECS, S3/CloudFront), its own database, and its own frontend build baked with its store identity.
 
-Store identity is configured entirely through env vars. Edit `backend/.env` to switch stores.
+**Active stores:** Phin and Beans (`phin-and-beans`), Phin Drips (`phin-drips`)
+**Stack:** React 18 + Vite + TypeScript · Python FastAPI · PostgreSQL · Stripe · Square POS
+**Store registry:** `stores/stores.json` — source of truth for all store slugs, names, taglines, domains
 
 ## Development Commands
 
-### Full Stack (Docker — recommended)
+### Full stack — pick a store
 ```bash
-cp backend/.env.example backend/.env   # fill in keys first
-docker compose up
+docker compose --env-file stores/phin-and-beans.env up
+docker compose --env-file stores/phin-drips.env up
 ```
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:8000
-- Swagger docs: http://localhost:8000/api/docs
+- Swagger: http://localhost:8000/api/docs
 
 ### Frontend only
 ```bash
 cd frontend
 npm install
-npm run dev        # uses frontend/.env for store name
-npm run build      # tsc type-check + Vite production build
-npm run preview    # serve the production build locally
+npm run dev        # uses frontend/.env for store identity
+npm run build      # tsc + Vite production build
 ```
 
 ### Backend only
@@ -40,76 +41,130 @@ uvicorn app.main:app --reload
 ### Database migrations
 ```bash
 cd backend
-alembic upgrade head        # apply all migrations
-alembic revision --autogenerate -m "description"  # generate new migration
+alembic upgrade head
+alembic revision --autogenerate -m "description"
 ```
 
-## Store Configuration
+## Multi-Store System
 
-| Variable | Where used | Example |
+### Store registry
+`stores/stores.json` is the authoritative list of stores. Each entry has:
+`slug`, `name`, `tagline`, `domain`, `db_name_dev`, `db_name_prod`, `env_prefix`
+
+### Per-store env files
+`stores/<slug>.env` — used with `docker compose --env-file` for local dev. Variables:
+
+| Variable | Used by | Example |
 |---|---|---|
-| `STORE_NAME` | Backend API title, health endpoint, Square idempotency key | `Phin and Beans` |
-| `STORE_DOMAIN` | CORS allowed origins (blank = no extra origin) | `phinandbeans.com` |
-| `VITE_STORE_NAME` | Browser tab title, navbar, hero, admin panel | `Phin and Beans` |
-| `VITE_STORE_TAGLINE` | Hero section subtitle | `Vietnamese-inspired coffee...` |
+| `STORE_SLUG` | Selects `backend/menus/<slug>.csv` at startup; passed to ECS | `phin-and-beans` |
+| `STORE_NAME` | Backend API, ECS env, Square key | `Phin and Beans` |
+| `STORE_TAGLINE` | Frontend hero/tab | `Vietnamese-inspired...` |
+| `STORE_DOMAIN` | CORS allowed origins | `phinandbeans.com` |
 | `POSTGRES_DB` | PostgreSQL database name | `phin_and_beans` |
-| `DYNAMODB_TABLE_MENU` | DynamoDB menu table (prod only) | `phin-and-beans-menu` |
-| `DYNAMODB_TABLE_DEALS` | DynamoDB deals table (prod only) | `phin-and-beans-deals` |
+| `DYNAMODB_TABLE_MENU` | DynamoDB menu table (prod) | `phin-and-beans-menu` |
+| `DYNAMODB_TABLE_DEALS` | DynamoDB deals table (prod) | `phin-and-beans-deals` |
 
-To switch stores, update `backend/.env` with the new store's values and restart the stack — no code changes needed.
+### Terraform layout
+One Terraform env directory per store × environment — fully isolated state, VPC, RDS, ECS, secrets:
+```
+terraform/envs/
+├── phin-and-beans/
+│   ├── dev/    # state key: phin-and-beans/dev/terraform.tfstate  VPC: 10.0.0.0/16
+│   └── prod/   # state key: phin-and-beans/prod/terraform.tfstate VPC: 10.1.0.0/16
+└── phin-drips/
+    ├── dev/    # state key: phin-drips/dev/terraform.tfstate       VPC: 10.2.0.0/16
+    └── prod/   # state key: phin-drips/prod/terraform.tfstate      VPC: 10.3.0.0/16
+```
+All envs share the same S3 state bucket (`coffee-tea-app-tfstate`) and DynamoDB lock table.
+
+### Per-store menus
+Each store has its own menu CSV at `backend/menus/<slug>.csv`. The backend loads it at startup via `app/services/menu_loader.py` — no code changes needed to change a menu.
+
+**CSV columns:** `item_id, name, category, description, price, image_url, is_available, tags, customizations`
+- `tags` — pipe-separated: `hot|iced|popular`
+- `customizations` — `key=opt1|opt2;key2=opt1|opt2` e.g. `milk=Whole|Oat;size=12oz|16oz`
+- `item_id` — leave blank; a stable UUID is derived from (store_slug + name) so IDs survive restarts
+
+Admin CRUD (POST/PUT/DELETE `/api/menu/`) works on top of the in-memory dict loaded from CSV. Changes persist only until restart; for permanent changes, edit the CSV and redeploy.
+
+### Adding a new store
+1. Add an entry to `stores/stores.json`
+2. Create `stores/<slug>.env`
+3. Copy and adapt `terraform/envs/phin-drips/` → `terraform/envs/<slug>/` — update `locals`, VPC CIDRs (use next unused /16), S3 state key, `db_name`
+4. Add the store to the `matrix` in both `deploy-dev` and `deploy-prod` jobs in `.github/workflows/ci-cd.yml`
+5. Add the store's GitHub secrets (see below)
+
+### GitHub Secrets required per store
+CI/CD uses the naming pattern `{ENV}_{PREFIX}_{VAR}` where PREFIX is `PAB` (Phin and Beans) or `PD` (Phin Drips):
+
+| Secret name pattern | Example |
+|---|---|
+| `DEV_{PREFIX}_DB_PASSWORD` | `DEV_PAB_DB_PASSWORD` |
+| `DEV_{PREFIX}_SECRET_KEY` | `DEV_PAB_SECRET_KEY` |
+| `DEV_{PREFIX}_STRIPE_SECRET_KEY` | `DEV_PAB_STRIPE_SECRET_KEY` |
+| `DEV_{PREFIX}_STRIPE_WEBHOOK_SECRET` | `DEV_PAB_STRIPE_WEBHOOK_SECRET` |
+| `DEV_{PREFIX}_SQUARE_ACCESS_TOKEN` | `DEV_PAB_SQUARE_ACCESS_TOKEN` |
+| `DEV_{PREFIX}_SQUARE_LOCATION_ID` | `DEV_PAB_SQUARE_LOCATION_ID` |
+| `PROD_{PREFIX}_*` | same pattern with `PROD_` prefix |
+| `PROD_{PREFIX}_ACM_CERT_ARN` | `PROD_PAB_ACM_CERT_ARN` |
+
+Shared secrets (not per-store): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+Shared vars: `ECR_REPO` (single backend image repo used by all stores)
 
 ## Architecture
 
 ### Request Flow
 ```
-Browser → React SPA → Axios (/api/* proxy via Vite in dev) → FastAPI → SQLAlchemy → PostgreSQL
-                                                                      ↳ Stripe (payments)
-                                                                      ↳ Square (POS sync on order completion)
+Browser → React SPA → Axios (/api/* proxy via Vite) → FastAPI → SQLAlchemy → PostgreSQL
+                                                              ↳ Stripe (payments)
+                                                              ↳ Square (POS sync on order)
 ```
 
 ### Frontend (`frontend/src/`)
-- **`config/store.ts`** — single source for `STORE_NAME` and `STORE_TAGLINE`; import from here in any component that needs the store name.
-- **`constants/orderStatus.ts`** — `ORDER_STATUSES`, `ORDER_STATUS_COLORS`, `ORDER_STATUS_LABELS`; used in `Orders.tsx` and `AdminDashboard.tsx`.
-- **`api/`** — Axios API client modules. `client.ts` sets up the base Axios instance with JWT `Authorization` header injection (reads from Zustand, not localStorage directly) and auto-logout + redirect on 401.
-- **`store/`** — Zustand stores persisted to `localStorage`: `useAuthStore` (user + JWT token) and `useCartStore` (items + applied deal discount).
-- **`pages/`** — Route-level components. `admin/AdminDashboard.tsx` is protected by `is_admin` flag on the user object.
-- **`components/`** — Reusable UI, organized by domain (`menu/`, `cart/`, `deals/`, `layout/`).
-- **`index.css`** — Global design tokens as CSS custom properties (brown palette, `--cream`, `--green-matcha`, typography, shadows, radii). All new UI should use these variables.
+- **`config/store.ts`** — single import for `STORE_NAME` + `STORE_TAGLINE`; always import from here
+- **`constants/orderStatus.ts`** — `ORDER_STATUSES`, `ORDER_STATUS_COLORS`, `ORDER_STATUS_LABELS`
+- **`api/`** — Axios clients; `client.ts` injects JWT from `useAuthStore.getState().token`; 401 → logout + redirect
+- **`store/`** — Zustand: `useAuthStore` (user + JWT), `useCartStore` (items + deal discount), both persisted to localStorage
+- **`components/layout/`** — `Navbar.tsx` + `Footer.tsx` (minimal Davien-style: copyright left, links right)
+- **`index.css`** — Starbucks-inspired design tokens: `--green-dark` (#1E3932) headers, `--green` (#00704A) CTAs, `--gold` loyalty, `--cream` page bg
 
 ### Backend (`backend/app/`)
-- **`routers/`** — Thin route handlers. Auth via `get_current_active_user` / `get_admin_user` dependencies from `utils/auth.py`.
-- **`constants.py`** — `ORDER_STATUSES` list; used by orders router for validation.
-- **`services/`** — Business logic lives here, not in routers:
-  - `deal_service.py` — spin-to-win randomness, deal code validation
-  - `menu_service.py` — DynamoDB CRUD (used in production; dev uses in-memory dict in `routers/menu.py`)
-  - `payment_service.py` — Stripe payment intent creation
-  - `square_service.py` — Square POS sync triggered on order completion
-- **`models/`** — SQLAlchemy ORM models (the database schema).
-- **`schemas/`** — Pydantic models for request validation and response serialization. Separate from ORM models.
-- **`config.py`** — All environment variables loaded via Pydantic `Settings`. Access config via `from app.config import settings`.
+- **`routers/`** — thin handlers; auth deps: `get_current_active_user` (user) / `get_admin_user` (admin) from `utils/auth.py`
+- **`config.py`** — all env vars via Pydantic `Settings`; `from app.config import settings`
+- **`constants.py`** — `ORDER_STATUSES` list
+- **`services/`** — all business logic: `deal_service.py`, `payment_service.py`, `square_service.py`, `menu_service.py` (DynamoDB in prod)
+- **`models/`** — SQLAlchemy ORM; **`schemas/`** — Pydantic request/response (kept separate)
+- Menu storage: `ENVIRONMENT=development` → in-memory dict in `routers/menu.py`; production → `menu_service.py` DynamoDB
 
 ### Key Data Models
-- **Order** has statuses: `received → brewing → ready_for_pickup → completed | cancelled`
-- **OrderItem** stores `customizations` as JSON (arbitrary drink customizations)
-- **Deal** supports `spin_to_win`, `flash_sale`, `loyalty_reward` types; `discount_type` is `percentage`, `fixed_amount`, or `free_item`
-- **User** has `is_admin` boolean and `loyalty_points` int
+- **Order** statuses: `received → brewing → ready_for_pickup → completed | cancelled`
+- **Deal** types: `spin_to_win`, `flash_sale`, `loyalty_reward`; discount types: `percentage`, `fixed_amount`, `free_item`
+- **User** has `is_admin` bool and `loyalty_points` int
 
-### Authentication
-JWT-based. Token stored in Zustand `useAuthStore` (persisted to `auth-storage` in localStorage) and attached by the Axios client via `useAuthStore.getState().token`. Backend validates tokens in `utils/auth.py` using `python-jose`. Passwords hashed with `bcrypt` via `passlib`.
+## CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
+
+```
+build-backend     — one Docker image pushed to ECR (shared by all stores)
+build-frontends   — matrix: one Vite build per store (bakes VITE_STORE_NAME/TAGLINE)
+unit-test         — pytest against the backend
+deploy-dev        — matrix: Terraform apply + ECS deploy + S3 sync per store
+e2e               — matrix: Playwright tests against each store's dev URL
+deploy-prod       — matrix: same as deploy-dev, push to main + manual approval gate
+```
 
 ## Environment Variables
 
 Required in `backend/.env` (see `backend/.env.example`):
-- `STORE_NAME` / `STORE_DOMAIN` — store identity and CORS domain
-- `DATABASE_URL` — PostgreSQL connection string
-- `SECRET_KEY` — JWT signing secret
+- `STORE_NAME` / `STORE_DOMAIN`
+- `DATABASE_URL`
+- `SECRET_KEY`
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`
 - `SQUARE_ACCESS_TOKEN` / `SQUARE_LOCATION_ID`
-- `AWS_REGION` / `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` — only needed for production DynamoDB menu storage
-- `ENVIRONMENT` — `development` uses in-memory menu storage in the router; anything else should wire `menu_service.py`
+- `AWS_REGION` / `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` — prod only
+- `ENVIRONMENT` — `development` uses in-memory menu
 
 ## Deployment
 
-- **Frontend**: `npm run build` → deploy `dist/` to S3 + CloudFront
-- **Backend**: Dockerfile uses `python:3.11-slim` + uvicorn; wrap with `mangum` for AWS Lambda + API Gateway
-- **Database**: RDS PostgreSQL; run `alembic upgrade head` on deploy
+- **Frontend** — each store builds independently → `dist/` → S3 + CloudFront (per-store bucket)
+- **Backend** — single Docker image → ECR → ECS Fargate (per-store service, env vars injected at runtime via Secrets Manager)
+- **Database** — per-store RDS PostgreSQL; run `alembic upgrade head` via ECS one-off task on deploy

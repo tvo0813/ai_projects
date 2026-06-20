@@ -1,0 +1,20 @@
+[
+  {
+    "slug": "phin-and-beans",
+    "name": "Phin and Beans",
+    "tagline": "Vietnamese-inspired coffee & tea, crafted with care.",
+    "domain": "phinandbeans.com",
+    "db_name_dev": "phin_and_beans_dev",
+    "db_name_prod": "phin_and_beans",
+    "env_prefix": "PHIN_AND_BEANS"
+  },
+  {
+    "slug": "phin-drips",
+    "name": "Phin Drips",
+    "tagline": "Bold Vietnamese drip coffee, your way.",
+    "domain": "phindrips.com",
+    "db_name_dev": "phin_drips_dev",
+    "db_name_prod": "phin_drips",
+    "env_prefix": "PHIN_DRIPS"
+  }
+]

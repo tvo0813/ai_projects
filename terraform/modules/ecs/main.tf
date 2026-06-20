@@ -186,6 +186,7 @@ resource "aws_ecs_task_definition" "backend" {
     ]
     environment = [
       { name = "STORE_NAME",          value = var.store_name },
+      { name = "STORE_SLUG",          value = var.store_slug },
       { name = "STORE_DOMAIN",        value = var.store_domain },
       { name = "ENVIRONMENT",         value = var.app_environment },
       { name = "AWS_REGION",          value = var.aws_region },
