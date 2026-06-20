@@ -63,6 +63,7 @@ alembic revision --autogenerate -m "description"
 | `POSTGRES_DB` | PostgreSQL database name | `phin_and_beans` |
 | `DYNAMODB_TABLE_MENU` | DynamoDB menu table (prod) | `phin-and-beans-menu` |
 | `DYNAMODB_TABLE_DEALS` | DynamoDB deals table (prod) | `phin-and-beans-deals` |
+| `GRAB_URL` | Grab Food ordering URL for this store | `https://food.grab.com/...` |
 
 ### Terraform layout
 One Terraform env directory per store × environment — fully isolated state, VPC, RDS, ECS, secrets:

@@ -5,7 +5,7 @@ version: '3.9'
 #   docker compose --env-file stores/phin-drips.env up
 
 services:
-  db:
+  coffee-tea-db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB:       ${POSTGRES_DB:-phin_and_beans}
@@ -14,14 +14,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - coffee_tea_postgres:/var/lib/postgresql/data
     healthcheck:
       test:     ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout:  5s
       retries:  5
 
-  backend:
+  coffee-tea-api:
     build: ./backend
     ports:
       - "8000:8000"
@@ -29,7 +29,7 @@ services:
       STORE_NAME:           ${STORE_NAME:-Phin and Beans}
       STORE_SLUG:           ${STORE_SLUG:-phin-and-beans}
       STORE_DOMAIN:         ${STORE_DOMAIN:-}
-      DATABASE_URL:         postgresql://postgres:password@db:5432/${POSTGRES_DB:-phin_and_beans}
+      DATABASE_URL:         postgresql://postgres:password@coffee-tea-db:5432/${POSTGRES_DB:-phin_and_beans}
       SECRET_KEY:           ${SECRET_KEY:-change-this-in-production}
       STRIPE_SECRET_KEY:    ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET:${STRIPE_WEBHOOK_SECRET:-}
@@ -39,25 +39,26 @@ services:
       DYNAMODB_TABLE_DEALS: ${DYNAMODB_TABLE_DEALS:-phin-and-beans-deals}
       ENVIRONMENT:          development
     depends_on:
-      db:
+      coffee-tea-db:
         condition: service_healthy
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  frontend:
+  coffee-tea-web:
     build: ./frontend
     ports:
       - "5173:5173"
     environment:
       VITE_STORE_NAME:    ${STORE_NAME:-Phin and Beans}
       VITE_STORE_TAGLINE: ${STORE_TAGLINE:-Vietnamese-inspired coffee & tea, crafted with care.}
+      VITE_GRAB_URL:      ${GRAB_URL:-}
     depends_on:
-      - backend
+      - coffee-tea-api
     volumes:
       - ./frontend:/app
       - /app/node_modules
     command: npm run dev -- --host 0.0.0.0
 
 volumes:
-  postgres_data:
+  coffee_tea_postgres:

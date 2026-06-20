@@ -64,7 +64,7 @@ module "ecs" {
   vpc_id             = module.vpc.vpc_id
   public_subnet_ids  = module.vpc.public_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
-  backend_image      = "${module.ecr.backend_repo_url}:latest"
+  backend_image      = "${module.ecr.api_repo_url}:latest"
   secret_arn         = module.secrets.secret_arn
   store_name         = var.store_name
   store_domain       = var.store_domain

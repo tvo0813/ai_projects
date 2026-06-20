@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
-import { STORE_NAME } from '../../config/store'
+import { STORE_NAME, GRAB_URL } from '../../config/store'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -66,8 +66,19 @@ export default function Navbar() {
         {user?.is_admin && navLink('/admin', 'Admin')}
       </div>
 
-      {/* Right actions — auth hidden until ordering is live; admin sign-out still works */}
+      {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {GRAB_URL && (
+          <a
+            href={GRAB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            style={{ padding: '0.55rem 1.25rem', fontSize: '0.875rem', fontWeight: 700 }}
+          >
+            Order
+          </a>
+        )}
         {user?.is_admin && (
           <>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

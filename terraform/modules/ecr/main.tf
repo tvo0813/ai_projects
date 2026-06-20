@@ -1,12 +1,12 @@
-resource "aws_ecr_repository" "backend" {
-  name                 = "${var.name}-backend"
+resource "aws_ecr_repository" "api" {
+  name                 = "${var.name}-api"
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration { scan_on_push = true }
-  tags = { Name = "${var.name}-backend" }
+  tags = { Name = "${var.name}-api" }
 }
 
-resource "aws_ecr_lifecycle_policy" "backend" {
-  repository = aws_ecr_repository.backend.name
+resource "aws_ecr_lifecycle_policy" "api" {
+  repository = aws_ecr_repository.api.name
   policy = jsonencode({
     rules = [{
       rulePriority = 1

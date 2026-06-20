@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { STORE_NAME, STORE_TAGLINE } from '../config/store'
+import { STORE_NAME, STORE_TAGLINE, GRAB_URL } from '../config/store'
 
 const PROMO_CARDS = [
   {
@@ -88,12 +88,29 @@ export default function Home() {
             {STORE_TAGLINE}
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/menu" className="btn btn-primary" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
+            {GRAB_URL ? (
+              <a
+                href={GRAB_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ fontSize: '0.95rem', padding: '0.8rem 2rem', fontWeight: 700 }}
+              >
+                Order on Grab
+              </a>
+            ) : null}
+            <Link
+              to="/menu"
+              className={GRAB_URL ? 'btn btn-outline-white' : 'btn btn-primary'}
+              style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}
+            >
               View menu
             </Link>
-            <Link to="/deals" className="btn btn-outline-white" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
-              Spin & Win
-            </Link>
+            {!GRAB_URL && (
+              <Link to="/deals" className="btn btn-outline-white" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
+                Spin & Win
+              </Link>
+            )}
           </div>
         </motion.div>
       </section>

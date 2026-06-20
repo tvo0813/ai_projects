@@ -1,2 +1,2 @@
-output "backend_repo_url" { value = aws_ecr_repository.backend.repository_url }
-output "backend_repo_arn" { value = aws_ecr_repository.backend.arn }
+output "api_repo_url" { value = aws_ecr_repository.api.repository_url }
+output "api_repo_arn" { value = aws_ecr_repository.api.arn }
