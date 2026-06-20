@@ -56,7 +56,7 @@ alembic revision --autogenerate -m "description"
 
 | Variable | Used by | Example |
 |---|---|---|
-| `STORE_SLUG` | Selects `backend/menus/<slug>.csv` at startup; passed to ECS | `phin-and-beans` |
+| `STORE_SLUG` | Selects `backend/menus/<slug>/menu.csv` at startup; passed to ECS | `phin-and-beans` |
 | `STORE_NAME` | Backend API, ECS env, Square key | `Phin and Beans` |
 | `STORE_TAGLINE` | Frontend hero/tab | `Vietnamese-inspired...` |
 | `STORE_DOMAIN` | CORS allowed origins | `phinandbeans.com` |
@@ -79,7 +79,7 @@ terraform/envs/
 All envs share the same S3 state bucket (`coffee-tea-app-tfstate`) and DynamoDB lock table.
 
 ### Per-store menus
-Each store has its own menu CSV at `backend/menus/<slug>.csv`. The backend loads it at startup via `app/services/menu_loader.py` — no code changes needed to change a menu.
+Each store has its own menu CSV at `backend/menus/<slug>/menu.csv`. The backend loads it at startup via `app/services/menu_loader.py` — no code changes needed to change a menu.
 
 **CSV columns:** `item_id, name, category, description, price, image_url, is_available, tags, customizations`
 - `tags` — pipe-separated: `hot|iced|popular`

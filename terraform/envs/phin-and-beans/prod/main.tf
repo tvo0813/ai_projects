@@ -66,6 +66,7 @@ module "ecs" {
   store_slug           = local.store_slug
   app_environment      = "production"
   aws_region           = var.aws_region
+  menu_s3_bucket       = var.menu_s3_bucket
   dynamodb_table_menu  = "${local.store_slug}-menu"
   dynamodb_table_deals = "${local.store_slug}-deals"
   task_cpu             = 512

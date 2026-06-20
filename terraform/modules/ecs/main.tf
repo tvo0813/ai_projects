@@ -152,6 +152,30 @@ resource "aws_iam_role_policy" "task_dynamodb" {
   })
 }
 
+resource "aws_iam_role_policy" "task_menu_s3" {
+  count = var.menu_s3_bucket != "" ? 1 : 0
+  name  = "${var.name}-menu-s3-access"
+  role  = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = ["arn:aws:s3:::${var.menu_s3_bucket}/${var.store_slug}/menu.csv"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = ["arn:aws:s3:::${var.menu_s3_bucket}"]
+        Condition = {
+          StringLike = { "s3:prefix" = ["${var.store_slug}/"] }
+        }
+      }
+    ]
+  })
+}
+
 # --- ECS ---
 
 resource "aws_ecs_cluster" "main" {
@@ -190,6 +214,7 @@ resource "aws_ecs_task_definition" "backend" {
       { name = "STORE_DOMAIN",        value = var.store_domain },
       { name = "ENVIRONMENT",         value = var.app_environment },
       { name = "AWS_REGION",          value = var.aws_region },
+      { name = "MENU_S3_BUCKET",       value = var.menu_s3_bucket },
       { name = "DYNAMODB_TABLE_MENU", value = var.dynamodb_table_menu },
       { name = "DYNAMODB_TABLE_DEALS",value = var.dynamodb_table_deals },
     ]

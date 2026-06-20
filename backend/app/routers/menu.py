@@ -9,9 +9,12 @@ from ..services.menu_loader import load_menu_from_csv
 
 router = APIRouter(prefix="/api/menu", tags=["menu"])
 
-# Seeded from CSV at import time; admin CRUD layered on top.
-# In production (ENVIRONMENT != development) swap calls to menu_service.py DynamoDB functions.
-_menu_db: dict = load_menu_from_csv(settings.STORE_SLUG)
+# Loaded at startup: tries S3 first (if MENU_S3_BUCKET is set), falls back to local CSV.
+_menu_db: dict = load_menu_from_csv(
+    settings.STORE_SLUG,
+    s3_bucket=settings.MENU_S3_BUCKET,
+    aws_region=settings.AWS_REGION,
+)
 
 
 @router.get("/", response_model=List[MenuItem])

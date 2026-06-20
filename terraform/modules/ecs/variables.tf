@@ -43,6 +43,12 @@ variable "aws_region" {
   type = string
 }
 
+variable "menu_s3_bucket" {
+  type        = string
+  default     = ""
+  description = "S3 bucket holding per-store menu CSVs (e.g. coffee-tea-app-menus). Empty = local CSV only."
+}
+
 variable "dynamodb_table_menu" {
   type = string
 }

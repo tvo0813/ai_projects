@@ -51,3 +51,9 @@ variable "backend_image" {
   type        = string
   description = "Full ECR image URL including tag"
 }
+
+variable "menu_s3_bucket" {
+  type        = string
+  default     = ""
+  description = "S3 bucket holding per-store menu CSVs. Empty = local CSV only."
+}

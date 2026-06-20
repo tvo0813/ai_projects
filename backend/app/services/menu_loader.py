@@ -1,5 +1,10 @@
 """
-Loads a store's menu from backend/menus/<store_slug>.csv at startup.
+Loads a store's menu at startup.
+
+Priority:
+  1. S3 bucket  — if MENU_S3_BUCKET is set, fetches <store_slug>/menu.csv from that bucket.
+  2. Local CSV  — falls back to backend/menus/<store_slug>/menu.csv on any S3 failure
+                  (missing bucket, missing key, no credentials, network error).
 
 CSV columns:
   item_id, name, category, description, price, image_url,
@@ -14,11 +19,15 @@ CSV columns:
 
 import csv
 import hashlib
+import io
+import logging
 import uuid
 from pathlib import Path
 from typing import Dict
 
 from ..schemas.menu import MenuItem
+
+logger = logging.getLogger(__name__)
 
 
 def _stable_id(store_slug: str, name: str) -> str:
@@ -48,52 +57,94 @@ def _parse_tags(raw: str) -> list:
     return [t.strip() for t in raw.split("|") if t.strip()]
 
 
-def load_menu_from_csv(store_slug: str) -> Dict[str, MenuItem]:
+def _parse_csv_content(content: str, store_slug: str) -> Dict[str, MenuItem]:
+    """Parse CSV text into a dict of MenuItem keyed by item_id."""
+    items: Dict[str, MenuItem] = {}
+    reader = csv.DictReader(io.StringIO(content))
+    for row in reader:
+        name = row["name"].strip()
+        if not name:
+            continue
+
+        item_id = row.get("item_id", "").strip() or _stable_id(store_slug, name)
+
+        try:
+            price = float(row.get("price", "0").strip())
+        except ValueError:
+            price = 0.0
+
+        is_available_raw = row.get("is_available", "true").strip().lower()
+        is_available = is_available_raw not in ("false", "0", "no")
+
+        item = MenuItem(
+            item_id=item_id,
+            name=name,
+            category=row.get("category", "").strip(),
+            description=row.get("description", "").strip() or None,
+            price=price,
+            image_url=row.get("image_url", "").strip() or None,
+            is_available=is_available,
+            tags=_parse_tags(row.get("tags", "")),
+            config_json=_parse_customizations(row.get("customizations", "")),
+        )
+        items[item_id] = item
+
+    return items
+
+
+def _load_from_s3(bucket: str, store_slug: str, aws_region: str) -> Dict[str, MenuItem] | None:
     """
-    Reads backend/menus/<store_slug>.csv and returns a dict keyed by item_id.
-    Falls back to an empty dict (with a warning) if the file is missing.
+    Fetch <store_slug>.csv from S3.
+    Returns parsed items on success, None on any failure (missing key, no creds, etc.).
     """
-    csv_path = Path(__file__).parent.parent.parent / "menus" / f"{store_slug}.csv"
+    try:
+        import boto3
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        s3 = boto3.client("s3", region_name=aws_region)
+        key = f"{store_slug}/menu.csv"
+        response = s3.get_object(Bucket=bucket, Key=key)
+        content = response["Body"].read().decode("utf-8")
+        items = _parse_csv_content(content, store_slug)
+        logger.info(
+            "Loaded %d menu items for '%s' from s3://%s/%s",
+            len(items), store_slug, bucket, key,
+        )
+        return items
+    except Exception as exc:
+        logger.warning(
+            "Could not load menu from s3://%s/%s — falling back to local CSV. Reason: %s",
+            bucket, f"{store_slug}/menu.csv", exc,
+        )
+        return None
+
+
+def _load_from_local(store_slug: str) -> Dict[str, MenuItem]:
+    """Read backend/menus/<store_slug>.csv. Returns empty dict if file is missing."""
+    csv_path = Path(__file__).parent.parent.parent / "menus" / store_slug / "menu.csv"
 
     if not csv_path.exists():
-        import logging
-        logging.getLogger(__name__).warning(
+        logger.warning(
             "Menu CSV not found for store '%s' at %s — menu will be empty.",
             store_slug, csv_path,
         )
         return {}
 
-    items: Dict[str, MenuItem] = {}
-
-    with csv_path.open(newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            name = row["name"].strip()
-            if not name:
-                continue
-
-            item_id = row.get("item_id", "").strip() or _stable_id(store_slug, name)
-
-            price_raw = row.get("price", "0").strip()
-            try:
-                price = float(price_raw)
-            except ValueError:
-                price = 0.0
-
-            is_available_raw = row.get("is_available", "true").strip().lower()
-            is_available = is_available_raw not in ("false", "0", "no")
-
-            item = MenuItem(
-                item_id=item_id,
-                name=name,
-                category=row.get("category", "").strip(),
-                description=row.get("description", "").strip() or None,
-                price=price,
-                image_url=row.get("image_url", "").strip() or None,
-                is_available=is_available,
-                tags=_parse_tags(row.get("tags", "")),
-                config_json=_parse_customizations(row.get("customizations", "")),
-            )
-            items[item_id] = item
-
+    content = csv_path.read_text(encoding="utf-8")
+    items = _parse_csv_content(content, store_slug)
+    logger.info("Loaded %d menu items for '%s' from local CSV.", len(items), store_slug)
     return items
+
+
+def load_menu_from_csv(store_slug: str, s3_bucket: str = "", aws_region: str = "us-east-1") -> Dict[str, MenuItem]:
+    """
+    Load the menu for a store.
+
+    Tries S3 first when s3_bucket is provided, then falls back to the local CSV.
+    """
+    if s3_bucket:
+        result = _load_from_s3(s3_bucket, store_slug, aws_region)
+        if result is not None:
+            return result
+
+    return _load_from_local(store_slug)

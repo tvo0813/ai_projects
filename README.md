@@ -137,7 +137,7 @@ Used locally with `docker compose --env-file`:
 
 | Variable | Used by | Example |
 |---|---|---|
-| `STORE_SLUG` | Backend — selects `backend/menus/<slug>.csv` | `phin-and-beans` |
+| `STORE_SLUG` | Backend — selects `backend/menus/<slug>/menu.csv` | `phin-and-beans` |
 | `STORE_NAME` | Backend API title, ECS env | `Phin and Beans` |
 | `STORE_TAGLINE` | Frontend hero section | `Vietnamese-inspired...` |
 | `STORE_DOMAIN` | Backend CORS allowed origins | `phinandbeans.com` |
@@ -147,7 +147,7 @@ Used locally with `docker compose --env-file`:
 
 ### Per-store menus
 
-Each store has its own menu CSV at `backend/menus/<slug>.csv`. The backend loads it at startup — no code changes needed to update a menu.
+Each store has its own menu CSV at `backend/menus/<slug>/menu.csv`. The backend loads it at startup — no code changes needed to update a menu.
 
 **CSV columns:** `item_id, name, category, description, price, image_url, is_available, tags, customizations`
 
@@ -385,7 +385,7 @@ DYNAMODB_TABLE_MENU=my-new-store-menu
 DYNAMODB_TABLE_DEALS=my-new-store-deals
 ```
 
-3. Create `backend/menus/<slug>.csv` with the store's menu items
+3. Create `backend/menus/<slug>/menu.csv` with the store's menu items (matches the S3 key `<bucket>/<slug>/menu.csv`)
 
 4. Copy a Terraform env directory and update for the new store:
 ```bash
