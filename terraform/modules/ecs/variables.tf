@@ -76,3 +76,20 @@ variable "log_retention_days" {
   type    = number
   default = 14
 }
+
+variable "google_maps_api_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "ollama_base_url" {
+  type        = string
+  default     = ""
+  description = "URL of the Ollama server reachable from ECS (e.g. http://ollama.internal:11434)"
+}
+
+variable "ollama_model" {
+  type    = string
+  default = "llama3.2:1b"
+}

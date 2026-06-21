@@ -1,7 +1,7 @@
 ---
 name: coffee-tea-app-context
 description: Load this skill when working on any feature, bug fix, or question about this multi-store coffee & tea shop app. Covers full-stack architecture, data models, service layer, auth, integrations, store config system, CI/CD, and development workflow.
-version: 1.5.0
+version: 1.6.0
 ---
 
 # Coffee & Tea Shop App — Project Context
@@ -12,7 +12,7 @@ A multi-store Vietnamese-inspired coffee & tea shop platform. One codebase power
 
 **Active stores:** `phin-and-beans` (Phin and Beans) · `phin-drips` (Phin Drips)
 
-**Stack:** React 18 + Vite + TypeScript · Python FastAPI · PostgreSQL 16 · Stripe · Square POS · AWS ECS/RDS/S3/CloudFront · Terraform · GitHub Actions
+**Stack:** React 18 + Vite + TypeScript · Python FastAPI · PostgreSQL 16 · Stripe · Square POS · Ollama (local LLM) · AWS ECS/RDS/S3/CloudFront · Terraform · GitHub Actions
 
 > Order placement is implemented in the backend but not surfaced in the public UI — will be re-enabled in a future release. The app is currently a public showcase/menu site.
 
@@ -72,6 +72,7 @@ ngrok http 5173   # or 5174 for Phin Drips
 | `MENU_S3_BUCKET` | S3 bucket for CSVs; blank = local files only |
 | `GOOGLE_MAPS_API_KEY` | Maps Embed API; blank = legacy embed fallback |
 | `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` | DynamoDB tables (prod) |
+| `OLLAMA_MODEL` | LLM model for the menu chatbot (e.g. `llama3.2`, `mistral`) |
 | `FRONTEND_PORT` / `BACKEND_PORT` / `DB_PORT` / `DB_VOLUME` | Docker port offsets for running stores simultaneously |
 
 Frontend reads store identity from `frontend/src/config/store.ts` — always import from there.
@@ -131,12 +132,13 @@ Each env is fully isolated: VPC, RDS, ECS, Secrets Manager, S3, CloudFront. Shar
 - `layout/Footer.tsx` — copyright left; Careers + Privacy Policy + Instagram/Facebook/TikTok icons right
 - `menu/MenuCard.tsx` — circular image (140px), name + price; click opens Framer Motion modal with full description
 - `deals/SpinWheel.tsx` — animated spin wheel
+- `ChatBot.tsx` — menu-only AI assistant section on Home page; suggestion pills, animated 3-dot typing indicator, conversation history, auto-scroll
 
 **State** (`frontend/src/store/`):
 - `useAuthStore` — user + JWT, Zustand `persist` to localStorage `"auth-storage"`
 - `useCartStore` — items + deal discount, persisted to `"cart-storage"`
 
-**API clients** (`frontend/src/api/`): `client.ts` (Axios + JWT interceptor + 401 redirect), `auth.ts`, `menu.ts`, `deals.ts`, `locations.ts`
+**API clients** (`frontend/src/api/`): `client.ts` (Axios + JWT interceptor + 401 redirect), `auth.ts`, `menu.ts`, `deals.ts`, `locations.ts`, `chat.ts` (`sendChatMessage` → POST `/api/chat/`)
 
 **Vite proxy** (dev only): `/api` and `/static` → `http://localhost:8000`
 
@@ -160,6 +162,7 @@ Each env is fully isolated: VPC, RDS, ECS, Secrets Manager, S3, CloudFront. Shar
 | `locations.py` | `/api/locations` | GET `/` (public) |
 | `orders.py` | `/api/orders` | payment-intent, create, history, status, Stripe webhook |
 | `users.py` | `/api/users` | `/me`, list, make-admin |
+| `chat.py` | `/api/chat` | POST `/` — menu chatbot via Ollama |
 
 **Services** (`backend/app/services/`):
 - `menu_loader.py` — S3 → local CSV fallback; resolves image URLs to `/static/images/`
@@ -171,6 +174,14 @@ Each env is fully isolated: VPC, RDS, ECS, Secrets Manager, S3, CloudFront. Shar
 - `menu_service.py` — in-memory dict (dev, `ENVIRONMENT=development`) or DynamoDB (prod)
 
 **Menu storage:** `ENVIRONMENT=development` → in-memory dict from CSV at startup. Production → DynamoDB via `menu_service.py`.
+
+**Ollama (local LLM / menu chatbot):**
+- `ollama` Docker service runs the Ollama server; models cached in `ollama_models` named volume (survives restarts)
+- `ollama-init` one-shot service auto-pulls `${OLLAMA_MODEL:-llama3.2}` on first run
+- `chat.py` uses the `openai` Python package pointed at `http://ollama:11434/v1` — Ollama's OpenAI-compatible endpoint
+- System prompt is built at request time with the live in-memory menu so the model always has current data
+- Strictly menu-only: model is instructed to redirect any off-topic questions
+- Change model via `OLLAMA_MODEL` env var (e.g. `mistral`, `gemma2`, `phi3`) — no code change needed
 
 **Locations Google Maps:** `maps_embed_url_keyed()` uses official Embed API (requires `GOOGLE_MAPS_API_KEY`); `maps_embed_url_legacy` property is the keyless fallback. Frontend tries keyed first, falls back via iframe `onError`.
 
@@ -198,6 +209,7 @@ JWT-based, stateless. Login UI is not linked from the public navbar — go to `/
 | Changed path | PAB workflow | PD workflow |
 |---|---|---|
 | `backend/app/**`, `frontend/src/**` (shared) | ✅ | ✅ |
+| `docker-compose.yml` (shared infra) | ✅ | ✅ |
 | `backend/menus/phin-and-beans/**` | ✅ | ❌ |
 | `backend/menus/phin-drips/**` | ❌ | ✅ |
 | `stores/phin-and-beans.env` | ✅ | ❌ |
@@ -221,6 +233,7 @@ Each workflow has its own concurrency group so they never cancel each other.
 | `GOOGLE_MAPS_API_KEY` | Shared (passed as `TF_VAR_google_maps_api_key`) |
 | `DEV_PAB_*` / `PROD_PAB_*` | Phin and Beans only |
 | `DEV_PD_*` / `PROD_PD_*` | Phin Drips only |
+| `DEV_{PREFIX}_OLLAMA_BASE_URL` / `PROD_{PREFIX}_OLLAMA_BASE_URL` | Per-store — URL of Ollama server reachable from ECS |
 
 Per-store secret pattern: `{ENV}_{PREFIX}_{VAR}` e.g. `DEV_PAB_DB_PASSWORD`, `PROD_PD_SECRET_KEY`
 

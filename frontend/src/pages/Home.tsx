@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { STORE_NAME, STORE_TAGLINE } from '../config/store'
 import { getMenuItems, type MenuItem } from '../api/menu'
+import ChatBot from '../components/ChatBot'
 
 const PILLARS = [
   { icon: '🇻🇳', title: 'Rooted in Vietnam', desc: 'Every recipe traces back to the streets of Saigon and Hanoi — where coffee isn\'t just a drink, it\'s a daily ritual.' },
@@ -139,6 +140,9 @@ export default function Home() {
 
         </div>
       </section>
+
+      {/* ── Menu chatbot ────────────────────── */}
+      <ChatBot />
 
       {/* ── Signature drinks ────────────────── */}
       {signatures.length > 0 && (

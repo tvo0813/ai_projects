@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     MENU_S3_BUCKET: str = ""   # e.g. "coffee-tea-app-menus"; blank = local CSV only
     GOOGLE_MAPS_API_KEY: str = ""
+    OLLAMA_BASE_URL: str = "http://ollama:11434"
+    OLLAMA_MODEL: str = "llama3.2:1b"
     DYNAMODB_TABLE_MENU: str = ""
     DYNAMODB_TABLE_DEALS: str = ""
     ENVIRONMENT: str = "development"

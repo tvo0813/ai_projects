@@ -16,6 +16,7 @@ on:
       - 'backend/menus/phin-drips/**'
       - 'stores/phin-drips.env'
       - 'terraform/envs/phin-drips/**'
+      - 'docker-compose.yml'
   push:
     branches: [main, develop]
     paths:
@@ -31,6 +32,7 @@ on:
       - 'backend/menus/phin-drips/**'
       - 'stores/phin-drips.env'
       - 'terraform/envs/phin-drips/**'
+      - 'docker-compose.yml'
 
 concurrency:
   group: phin-drips-${{ github.ref }}
@@ -190,6 +192,8 @@ jobs:
           TF_VAR_square_access_token:   ${{ secrets.DEV_PD_SQUARE_ACCESS_TOKEN }}
           TF_VAR_square_location_id:    ${{ secrets.DEV_PD_SQUARE_LOCATION_ID }}
           TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_ollama_base_url:       ${{ secrets.DEV_PD_OLLAMA_BASE_URL }}
+          TF_VAR_ollama_model:          llama3.2:1b
         run: terraform apply -auto-approve
 
       - name: Get Terraform outputs
@@ -340,6 +344,8 @@ jobs:
           TF_VAR_square_location_id:    ${{ secrets.PROD_PD_SQUARE_LOCATION_ID }}
           TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
           TF_VAR_acm_certificate_arn:   ${{ secrets.PROD_PD_ACM_CERT_ARN }}
+          TF_VAR_ollama_base_url:       ${{ secrets.PROD_PD_OLLAMA_BASE_URL }}
+          TF_VAR_ollama_model:          llama3.2:1b
         run: terraform apply -auto-approve
 
       - name: Get Terraform outputs

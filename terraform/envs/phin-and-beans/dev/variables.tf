@@ -57,3 +57,19 @@ variable "menu_s3_bucket" {
   default     = ""
   description = "S3 bucket holding per-store menu CSVs. Empty = local CSV only."
 }
+
+variable "google_maps_api_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "ollama_base_url" {
+  type    = string
+  default = ""
+}
+
+variable "ollama_model" {
+  type    = string
+  default = "llama3.2:1b"
+}

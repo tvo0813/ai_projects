@@ -209,14 +209,17 @@ resource "aws_ecs_task_definition" "backend" {
       { name = "DATABASE_URL",          valueFrom = "${var.secret_arn}:DATABASE_URL::" },
     ]
     environment = [
-      { name = "STORE_NAME",          value = var.store_name },
-      { name = "STORE_SLUG",          value = var.store_slug },
-      { name = "STORE_DOMAIN",        value = var.store_domain },
-      { name = "ENVIRONMENT",         value = var.app_environment },
-      { name = "AWS_REGION",          value = var.aws_region },
+      { name = "STORE_NAME",           value = var.store_name },
+      { name = "STORE_SLUG",           value = var.store_slug },
+      { name = "STORE_DOMAIN",         value = var.store_domain },
+      { name = "ENVIRONMENT",          value = var.app_environment },
+      { name = "AWS_REGION",           value = var.aws_region },
       { name = "MENU_S3_BUCKET",       value = var.menu_s3_bucket },
-      { name = "DYNAMODB_TABLE_MENU", value = var.dynamodb_table_menu },
-      { name = "DYNAMODB_TABLE_DEALS",value = var.dynamodb_table_deals },
+      { name = "DYNAMODB_TABLE_MENU",  value = var.dynamodb_table_menu },
+      { name = "DYNAMODB_TABLE_DEALS", value = var.dynamodb_table_deals },
+      { name = "GOOGLE_MAPS_API_KEY",  value = var.google_maps_api_key },
+      { name = "OLLAMA_BASE_URL",      value = var.ollama_base_url },
+      { name = "OLLAMA_MODEL",         value = var.ollama_model },
     ]
     logConfiguration = {
       logDriver = "awslogs"

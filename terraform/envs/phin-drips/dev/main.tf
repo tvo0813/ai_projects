@@ -68,6 +68,9 @@ module "ecs" {
   menu_s3_bucket       = var.menu_s3_bucket
   dynamodb_table_menu  = "${local.store_slug}-menu"
   dynamodb_table_deals = "${local.store_slug}-deals"
+  google_maps_api_key  = var.google_maps_api_key
+  ollama_base_url      = var.ollama_base_url
+  ollama_model         = var.ollama_model
   desired_count        = 1
 }
 
