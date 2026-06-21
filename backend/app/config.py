@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SQUARE_LOCATION_ID: str = ""
     AWS_REGION: str = "us-east-1"
     MENU_S3_BUCKET: str = ""   # e.g. "coffee-tea-app-menus"; blank = local CSV only
+    GOOGLE_MAPS_API_KEY: str = ""
     DYNAMODB_TABLE_MENU: str = ""
     DYNAMODB_TABLE_DEALS: str = ""
     ENVIRONMENT: str = "development"

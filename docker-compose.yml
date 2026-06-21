@@ -34,6 +34,7 @@ services:
       SQUARE_ACCESS_TOKEN:   ${SQUARE_ACCESS_TOKEN:-}
       SQUARE_LOCATION_ID:    ${SQUARE_LOCATION_ID:-}
       MENU_S3_BUCKET:        ${MENU_S3_BUCKET:-}
+      GOOGLE_MAPS_API_KEY:   ${GOOGLE_MAPS_API_KEY:-}
       DYNAMODB_TABLE_MENU:   ${DYNAMODB_TABLE_MENU:-phin-and-beans-menu}
       DYNAMODB_TABLE_DEALS:  ${DYNAMODB_TABLE_DEALS:-phin-and-beans-deals}
       ENVIRONMENT:           development

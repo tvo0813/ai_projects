@@ -151,8 +151,8 @@ export default function Menu() {
                 <motion.div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: '1.25rem',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                    gap: '0.5rem',
                   }}
                   initial="hidden"
                   whileInView="show"

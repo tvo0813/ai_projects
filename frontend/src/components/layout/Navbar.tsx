@@ -69,7 +69,7 @@ export default function Navbar() {
 
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <Link to="/deals" className="btn btn-outline" style={{ padding: '0.55rem 1.25rem', fontSize: '0.875rem' }}>
+        <Link to="/locations" className="btn btn-outline" style={{ padding: '0.55rem 1.25rem', fontSize: '0.875rem' }}>
           Locations
         </Link>
         {GRAB_URL && (

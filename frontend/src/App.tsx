@@ -10,6 +10,7 @@ import Register from './pages/Register'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Careers from './pages/Careers'
+import Locations from './pages/Locations'
 
 export default function App() {
   return (
@@ -37,7 +38,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/admin"    element={<AdminDashboard />} />
         <Route path="/privacy"  element={<PrivacyPolicy />} />
-        <Route path="/careers"  element={<Careers />} />
+        <Route path="/careers"   element={<Careers />} />
+        <Route path="/locations" element={<Locations />} />
       </Routes>
       <Footer />
     </>

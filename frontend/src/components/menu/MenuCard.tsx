@@ -1,82 +1,164 @@
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { MenuItem } from '../../api/menu'
 
 interface Props { item: MenuItem }
 
 export default function MenuCard({ item }: Props) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <motion.div
-      variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
-      transition={{ duration: 0.3 }}
-      style={{
-        background: 'var(--white)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
-      }}
-      whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(0,0,0,0.10)' }}
-    >
-      {/* Image */}
-      {item.image_url ? (
+    <>
+      <motion.div
+        variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
+        transition={{ duration: 0.3 }}
+        onClick={() => setOpen(true)}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.75rem',
+          cursor: 'pointer',
+          padding: '1rem 0.5rem',
+          borderRadius: 'var(--radius-lg)',
+          transition: 'background 0.15s',
+        }}
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
+      >
+        {/* Circular image */}
         <div style={{
-          height: 200,
-          background: `url(${item.image_url}) center/cover no-repeat`,
-          position: 'relative',
-        }}>
-          {!item.is_available && <SoldOutOverlay />}
-        </div>
-      ) : (
-        <div style={{
-          height: 160,
-          background: 'var(--green-xlight)',
+          width: 140,
+          height: 140,
+          borderRadius: '50%',
+          background: item.image_url
+            ? `url(${item.image_url}) center/cover no-repeat`
+            : 'var(--green-xlight)',
+          flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
+          overflow: 'hidden',
         }}>
-          <span style={{ fontSize: '2.5rem', opacity: 0.5 }}>☕</span>
-          {!item.is_available && <SoldOutOverlay />}
+          {!item.image_url && <span style={{ fontSize: '2.5rem', opacity: 0.4 }}>☕</span>}
+          {!item.is_available && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(255,255,255,0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span className="badge badge-red" style={{ fontSize: '0.7rem' }}>Sold out</span>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Body */}
-      <div style={{ padding: '1.1rem 1.25rem 1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-          <h3 style={{ fontSize: '0.975rem', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3 }}>
+        {/* Name + price */}
+        <div style={{ textAlign: 'center' }}>
+          <p style={{
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            lineHeight: 1.35,
+            marginBottom: '0.2rem',
+          }}>
             {item.name}
-          </h3>
-          <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: '0.975rem', flexShrink: 0 }}>
-            ${item.price.toFixed(2)}
-          </span>
-        </div>
-
-        {item.description && (
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '0.1rem' }}>
-            {item.description}
           </p>
-        )}
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+            ${item.price.toFixed(2)}
+          </p>
+        </div>
+      </motion.div>
 
-        {item.tags && item.tags.includes('popular') && (
-          <div style={{ marginTop: 'auto', paddingTop: '0.6rem' }}>
-            <span className="badge badge-gold">Popular</span>
-          </div>
+      {/* Detail modal */}
+      <AnimatePresence>
+        {open && (
+          <ItemModal item={item} onClose={() => setOpen(false)} />
         )}
-      </div>
-    </motion.div>
+      </AnimatePresence>
+    </>
   )
 }
 
-function SoldOutOverlay() {
+function ItemModal({ item, onClose }: { item: MenuItem; onClose: () => void }) {
   return (
-    <div style={{
-      position: 'absolute', inset: 0,
-      background: 'rgba(255,255,255,0.75)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <span className="badge badge-red" style={{ fontSize: '0.8rem' }}>Sold out</span>
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1.5rem',
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 16 }}
+        transition={{ duration: 0.2 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--white)',
+          borderRadius: 'var(--radius-lg)',
+          maxWidth: 400,
+          width: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Image */}
+        <div style={{
+          height: 220,
+          background: item.image_url
+            ? `url(${item.image_url}) center/cover no-repeat`
+            : 'var(--green-xlight)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {!item.image_url && <span style={{ fontSize: '3rem', opacity: 0.3 }}>☕</span>}
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, lineHeight: 1.3, flex: 1, paddingRight: '1rem' }}>
+              {item.name}
+            </h3>
+            <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: '1.05rem', flexShrink: 0 }}>
+              ${item.price.toFixed(2)}
+            </span>
+          </div>
+
+          {item.description && (
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              {item.description}
+            </p>
+          )}
+
+          {item.tags?.includes('popular') && (
+            <div style={{ marginTop: '1rem' }}>
+              <span className="badge badge-gold">Popular</span>
+            </div>
+          )}
+
+          {!item.is_available && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <span className="badge badge-red">Currently unavailable</span>
+            </div>
+          )}
+
+          <button
+            onClick={onClose}
+            className="btn btn-outline"
+            style={{ width: '100%', marginTop: '1.25rem', padding: '0.65rem' }}
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
