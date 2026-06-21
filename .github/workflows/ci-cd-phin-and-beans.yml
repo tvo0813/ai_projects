@@ -107,6 +107,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_STORE_NAME:    ${{ env.STORE_NAME }}
+          VITE_STORE_SLUG:    ${{ env.STORE_SLUG }}
           VITE_STORE_TAGLINE: ${{ env.STORE_TAGLINE }}
           VITE_GRAB_URL:      ${{ env.GRAB_URL }}
         run: |
