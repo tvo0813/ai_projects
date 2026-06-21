@@ -1,18 +1,27 @@
 item_id,name,category,description,price,image_url,is_available,tags,customizations
-,Espresso,espresso,Rich concentrated single shot of espresso.,3.50,,true,hot|classic,shots=1|2|3
-,Cappuccino,espresso,Double espresso topped with velvety steamed milk foam.,5.00,,true,hot|popular,milk=Whole|Oat|Almond;size=12oz|16oz
-,Latte,espresso,Smooth espresso with steamed milk — simple and perfect.,5.50,,true,hot|iced,milk=Whole|Oat|Almond|Soy;size=12oz|16oz|20oz
-,Flat White,espresso,Ristretto shots with micro-foam steamed milk.,5.50,,true,hot|strong,milk=Whole|Oat;size=8oz|12oz
-,Cortado,espresso,Equal parts espresso and steamed milk — no foam.,4.50,,true,hot|small,
-,Matcha Latte,matcha,Ceremonial-grade matcha from Kyoto whisked with steamed milk.,5.50,,true,hot|iced|popular,milk=Whole|Oat|Coconut;size=12oz|16oz;sweetness=None|Half|Full
-,Iced Matcha,matcha,Shaken matcha over ice with your choice of milk.,6.00,,true,iced|popular,milk=Oat|Coconut|Almond;sweetness=None|Half|Full
-,Cold Brew,cold,12-hour cold steeped for smooth never bitter coffee.,5.00,,true,iced|popular,size=12oz|16oz|24oz
-,Iced Americano,cold,Double espresso over ice topped with cold water.,4.50,,true,iced,shots=2|3;size=12oz|16oz|24oz
-,Vanilla Sweet Cream Cold Brew,cold,Cold brew topped with vanilla sweet cream cold foam.,6.50,,true,iced|sweet|popular,size=16oz|24oz
-,Chai Latte,tea,Spiced masala chai concentrate with steamed milk.,5.00,,true,hot|spiced,milk=Whole|Oat|Almond;size=12oz|16oz
-,London Fog,tea,Earl Grey tea latte with vanilla and steamed milk.,5.00,,true,hot|floral,milk=Whole|Oat;size=12oz|16oz
-,Butter Croissant,pastry,Flaky golden butter croissant baked fresh daily.,4.00,,true,popular|fresh,
-,Pain au Chocolat,pastry,Dark chocolate tucked inside buttery laminated pastry.,4.50,,true,sweet,
-,Blueberry Muffin,pastry,Moist muffin packed with fresh blueberries and lemon zest.,4.00,,true,sweet|fresh,
-,Avocado Toast,food,Smashed avo on sourdough with chili flakes and microgreens.,9.50,,true,brunch|popular,
-,Egg & Cheese Sandwich,food,Cage-free egg with aged cheddar on a toasted brioche bun.,8.00,,true,breakfast,
+,Marble Drip,signature,Lighter Vietnamese phin coffee with sweet condensed milk — smooth and easy going.,5.50,,true,popular|iced|fan-favorite|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Egg Cream Coffee,signature,Egg cream and cocoa powder topped over bold Vietnamese iced coffee.,6.00,,true,iced|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Ube Cream Coffee,signature,Coconut ube purple yam cream over bold Vietnamese iced coffee.,6.00,,true,iced|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Matcha Cream Coffee,signature,Matcha cold cream topped with cocoa powder over bold Vietnamese iced coffee.,6.00,,true,iced|signature|matcha,sweetness=Less Sweet|Regular|Extra Sweet
+,Einspanner Cream Coffee,signature,Einspanner cream and cocoa powder topped over bold Vietnamese iced coffee.,6.00,,true,iced|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Coconut Blended Coffee,signature,Ice-blended Vietnamese coffee with coconut milk and toasted coconut flakes.,6.00,,true,iced|blended|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Vietnamese Coffee,coffee,Traditional iced Vietnamese phin drip coffee with condensed milk.,5.00,,true,iced|classic,sweetness=Less Sweet|Regular|Extra Sweet
+,Cafe Latte,coffee,Bold phin drip espresso shot blended with your choice of milk.,5.00,,true,iced|classic,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
+,Cold Brew,coffee,Slow-steeped pitch black cold brew — strong and smooth.,5.00,,true,iced|strong|new,sweetness=None|Less Sweet|Regular
+,Sweet Cream Cold Brew,coffee,Slow-steeped cold brew topped with our house sweet cream.,6.00,,true,iced|popular|new,sweetness=None|Less Sweet|Regular
+,Matcha Latte,matcha,Ceremonial-grade matcha whisked with steamed milk — hot or iced.,5.50,,true,hot|iced|popular,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
+,Iced Matcha,matcha,Shaken ceremonial matcha over ice with your choice of milk.,5.50,,true,iced|popular,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
+,Matcha Cream Latte,matcha,Matcha cold cream floated over house sweet milk with a phin drip shot.,6.00,,true,iced|signature|matcha,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
+,Einspanner Latte,latte,Einspanner cream and cocoa powder over house sweet milk with a bold phin shot.,5.00,,true,iced|popular,sweetness=Less Sweet|Regular|Extra Sweet
+,Banana Latte,latte,Banana cream with cinnamon powder over house sweet milk and a bold phin shot.,6.00,,true,iced|sweet,sweetness=Less Sweet|Regular|Extra Sweet
+,Ube Latte,latte,Ube cream over phin drip coffee with fresh milk and simple syrup.,6.00,,true,iced|sweet,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
+,Sesame Latte,latte,Black sesame cream over phin drip coffee with fresh milk and simple syrup.,6.00,,true,iced|nutty,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
+,Strawberry Cream Oat Latte,latte,Strawberry cream over oat milk and a phin drip shot — light and fruity.,6.00,,true,iced|fruity,sweetness=Less Sweet|Regular|Extra Sweet
+,Jasmine Milk Tea,tea,Fragrant jasmine green tea with house milk.,5.00,,true,iced|floral,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet;pearls=Yes|No
+,Taro Milk Tea,tea,Creamy taro with house milk — sweet earthy and smooth.,5.50,,true,iced|sweet|popular,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet;pearls=Yes|No
+,Thai Tea,tea,Spiced orange Thai tea with condensed milk.,5.00,,true,iced|spiced|classic,sweetness=Less Sweet|Regular|Extra Sweet
+,Peach Green Tea,tea,Light green tea with fresh peach syrup and a hint of citrus.,5.00,,true,iced|fruity|refreshing,sweetness=Less Sweet|Regular|Extra Sweet
+,Hot Vietnamese Coffee,hot,Classic phin drip Vietnamese coffee served hot with condensed milk.,4.50,,true,hot|classic,sweetness=Less Sweet|Regular|Extra Sweet
+,Hot Latte,hot,Bold phin drip shot with steamed milk of your choice.,5.00,,true,hot|classic,milk=Whole|Oat|Almond;sweetness=Less Sweet|Regular|Extra Sweet
+,Hot Matcha,hot,Ceremonial-grade matcha whisked with steamed milk.,5.50,,true,hot|popular,milk=Whole|Oat|Almond;sweetness=Less Sweet|Regular|Extra Sweet
+,Hot Americano,hot,Double phin drip shots topped with hot water — clean and bold.,4.00,,true,hot|strong,

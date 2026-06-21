@@ -3,6 +3,16 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 
+class PublicDealOut(BaseModel):
+    title: str
+    description: str
+    discount_type: str
+    discount_value: float
+    label: str
+    expires_at: Optional[str] = None
+    badge: Optional[str] = None
+
+
 class DealCreate(BaseModel):
     code: str
     deal_type: str

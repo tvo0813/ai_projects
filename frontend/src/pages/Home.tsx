@@ -1,58 +1,23 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { STORE_NAME, STORE_TAGLINE, GRAB_URL } from '../config/store'
+import { STORE_NAME, STORE_TAGLINE } from '../config/store'
+import { getMenuItems, type MenuItem } from '../api/menu'
 
-const PROMO_CARDS = [
-  {
-    bg: '#1E3932',
-    accent: '#D4E9E2',
-    emoji: '🍵',
-    label: 'New arrival',
-    title: 'Ceremonial Matcha',
-    body: 'Kagoshima-grade matcha, whisked to perfection. Hot or iced.',
-    cta: 'Order now',
-    to: '/menu',
-  },
-  {
-    bg: '#2E6D5E',
-    accent: '#EEF7F2',
-    emoji: '🧊',
-    label: 'Customer favourite',
-    title: 'Cold Brew Season',
-    body: '12-hour steeped cold brew. Smooth, never bitter — year round.',
-    cta: 'Try it',
-    to: '/menu',
-  },
-  {
-    bg: '#CBA258',
-    accent: '#1E3932',
-    emoji: '🎰',
-    label: 'Rewards',
-    title: 'Spin & Win Daily',
-    body: 'Log in every day to spin for free drinks, discounts, and more.',
-    cta: 'Spin now',
-    to: '/deals',
-  },
-  {
-    bg: '#F2F0EB',
-    accent: '#1E3932',
-    emoji: '🥐',
-    label: 'Fresh daily',
-    title: 'Pastries & Bites',
-    body: 'Butter croissants, avocado toast, and seasonal specials — baked fresh.',
-    cta: 'See food menu',
-    to: '/menu',
-  },
-]
-
-const FEATURES = [
-  { icon: '🌿', title: 'Ethically Sourced', desc: 'Direct-trade relationships with farmers across 12 origins.' },
-  { icon: '☕', title: 'Small-Batch Roasted', desc: 'Peak freshness in every cup — roasted to order.' },
-  { icon: '📍', title: 'Find a Store', desc: 'Multiple locations — find the one nearest to you.' },
-  { icon: '⭐', title: 'Loyalty Rewards', desc: 'Earn stars with every visit. Redeem for free drinks.' },
+const PILLARS = [
+  { icon: '🇻🇳', title: 'Rooted in Vietnam', desc: 'Every recipe traces back to the streets of Saigon and Hanoi — where coffee isn\'t just a drink, it\'s a daily ritual.' },
+  { icon: '🌿', title: 'Fresh, Always', desc: 'We brew to order, source seasonally, and never cut corners. What\'s in your cup was made for you, not a shelf.' },
+  { icon: '☕', title: 'Authentic to the Last Drop', desc: 'From our phin-drip method to our condensed milk ratio — we do it the Vietnamese way, exactly as it was meant to be.' },
+  { icon: '🤝', title: 'Here for Our Community', desc: 'We\'re your neighborhood spot. We know your order, your name, and we\'re honored you choose to spend your morning with us.' },
 ]
 
 export default function Home() {
+  const [signatures, setSignatures] = useState<MenuItem[]>([])
+
+  useEffect(() => {
+    getMenuItems('signature').then(setSignatures).catch(() => {})
+  }, [])
+
   return (
     <div>
       {/* ── Hero ───────────────────────────── */}
@@ -87,123 +52,69 @@ export default function Home() {
           }}>
             {STORE_TAGLINE}
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {GRAB_URL ? (
-              <a
-                href={GRAB_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-                style={{ fontSize: '0.95rem', padding: '0.8rem 2rem', fontWeight: 700 }}
-              >
-                Order on Grab
-              </a>
-            ) : null}
-            <Link
-              to="/menu"
-              className={GRAB_URL ? 'btn btn-outline-white' : 'btn btn-primary'}
-              style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}
-            >
-              View menu
-            </Link>
-            {!GRAB_URL && (
-              <Link to="/deals" className="btn btn-outline-white" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
-                Spin & Win
-              </Link>
-            )}
-          </div>
         </motion.div>
       </section>
 
-      {/* ── Promo card grid ─────────────────── */}
-      <section style={{ padding: '4rem 1.5rem', background: 'var(--cream)' }}>
-        <div className="container">
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '1.25rem',
-          }}>
-            {PROMO_CARDS.map((card, i) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.07 }}
-                style={{
-                  background: card.bg,
-                  borderRadius: 'var(--radius-xl)',
-                  padding: '2.5rem 2rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem',
-                  minHeight: 260,
-                }}
-              >
-                <span style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: card.accent,
-                  opacity: 0.8,
-                }}>
-                  {card.label}
-                </span>
-                <div style={{ fontSize: '2.2rem' }}>{card.emoji}</div>
-                <h2 style={{
-                  fontSize: '1.4rem',
-                  color: card.bg === '#F2F0EB' ? '#1E3932' : '#fff',
-                  fontWeight: 700,
-                }}>
-                  {card.title}
-                </h2>
-                <p style={{
-                  fontSize: '0.9rem',
-                  color: card.bg === '#F2F0EB' ? '#4a4a4a' : card.accent,
-                  lineHeight: 1.6,
-                  flex: 1,
-                }}>
-                  {card.body}
-                </p>
-                <Link
-                  to={card.to}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: card.bg === '#F2F0EB' ? 'var(--green-dark)' : card.accent,
-                    textDecoration: 'underline',
-                    textDecorationColor: 'transparent',
-                    transition: 'text-decoration-color 0.15s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.textDecorationColor = 'currentColor')}
-                  onMouseLeave={(e) => (e.currentTarget.style.textDecorationColor = 'transparent')}
-                >
-                  {card.cta} →
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── Our story ───────────────────────── */}
+      <section style={{ padding: '5rem 1.5rem', background: 'var(--white)' }}>
+        <div className="container" style={{ maxWidth: 860 }}>
 
-      {/* ── Why us ──────────────────────────── */}
-      <section style={{ padding: '4.5rem 1.5rem', background: 'var(--white)' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <p className="section-label" style={{ marginBottom: '0.75rem' }}>Our promise</p>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}>More than just coffee</h2>
-          </div>
+          {/* Story text */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.55 }}
+            style={{ textAlign: 'center', marginBottom: '4rem' }}
+          >
+            <p className="section-label" style={{ marginBottom: '0.75rem' }}>Our story</p>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', marginBottom: '1.75rem' }}>
+              Born from the streets of Vietnam
+            </h2>
+            <p style={{
+              fontSize: '1.05rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.85,
+              maxWidth: 680,
+              margin: '0 auto 1.25rem',
+            }}>
+              It started with a memory — the smell of a phin drip slowly filling a small glass on a plastic stool
+              outside a Saigon café at 7 in the morning. Strong, sweet, unhurried. Vietnam doesn't rush its coffee,
+              and neither do we.
+            </p>
+            <p style={{
+              fontSize: '1.05rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.85,
+              maxWidth: 680,
+              margin: '0 auto 1.25rem',
+            }}>
+              We opened our doors because we wanted to share that feeling with our community — not a watered-down
+              version of it, but the real thing. Every drink we serve is made the way it was meant to be made:
+              with a proper phin filter, real condensed milk, and ingredients we're proud of.
+            </p>
+            <p style={{
+              fontSize: '1.05rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.85,
+              maxWidth: 680,
+              margin: '0 auto',
+            }}>
+              Vietnamese coffee culture is about more than caffeine — it's about slowing down, connecting,
+              and savoring something made with care. That's what we bring to every cup, every day,
+              for everyone who walks through our door.
+            </p>
+          </motion.div>
+
+          {/* Pillars */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '2rem',
           }}>
-            {FEATURES.map((f, i) => (
+            {PILLARS.map((p, i) => (
               <motion.div
-                key={f.title}
+                key={p.title}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -218,83 +129,72 @@ export default function Home() {
                   fontSize: '1.5rem',
                   margin: '0 auto 1rem',
                 }}>
-                  {f.icon}
+                  {p.icon}
                 </div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.4rem' }}>{f.title}</h3>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{f.desc}</p>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.4rem' }}>{p.title}</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>{p.desc}</p>
               </motion.div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* ── Fan favourites preview ───────────── */}
-      <section style={{ padding: '4.5rem 1.5rem', background: 'var(--cream)' }}>
-        <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <p className="section-label" style={{ marginBottom: '0.5rem' }}>Popular now</p>
-              <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.2rem)' }}>Fan favourites</h2>
-            </div>
-            <Link to="/menu" className="btn btn-outline" style={{ fontSize: '0.875rem', padding: '0.55rem 1.25rem' }}>
-              See full menu →
-            </Link>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '1rem',
-          }}>
-            {[
-              { name: 'Matcha Latte',  price: 5.50, emoji: '🍵', tag: 'Ceremonial grade' },
-              { name: 'Cold Brew',     price: 5.00, emoji: '🧊', tag: '12-hr steep' },
-              { name: 'Cappuccino',    price: 5.00, emoji: '☕', tag: 'Double shot' },
-              { name: 'Chai Latte',    price: 5.00, emoji: '🫖', tag: 'Spiced masala' },
-              { name: 'Croissant',     price: 4.00, emoji: '🥐', tag: 'Freshly baked' },
-              { name: 'Iced Americano',price: 4.50, emoji: '🥤', tag: 'Over ice' },
-            ].map((item) => (
-              <Link
-                key={item.name}
-                to="/menu"
-                className="card"
-                style={{ padding: '1.25rem', textAlign: 'center', display: 'block', textDecoration: 'none' }}
-              >
-                <div style={{ fontSize: '2.2rem', marginBottom: '0.75rem' }}>{item.emoji}</div>
-                <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem' }}>{item.name}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>{item.tag}</p>
-                <p style={{ color: 'var(--green)', fontWeight: 700, fontSize: '0.9rem' }}>${item.price.toFixed(2)}</p>
+      {/* ── Signature drinks ────────────────── */}
+      {signatures.length > 0 && (
+        <section style={{ padding: '4.5rem 1.5rem', background: 'var(--cream)' }}>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <p className="section-label" style={{ marginBottom: '0.5rem' }}>House specials</p>
+                <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.2rem)' }}>Signature Drinks</h2>
+              </div>
+              <Link to="/menu" className="btn btn-outline" style={{ fontSize: '0.875rem', padding: '0.55rem 1.25rem' }}>
+                See full menu →
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* ── Rewards CTA ─────────────────────── */}
-      <section style={{
-        background: 'var(--green-dark)',
-        color: 'var(--white)',
-        padding: '5rem 1.5rem',
-        textAlign: 'center',
-      }}>
-        <div className="container" style={{ maxWidth: 640 }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⭐</div>
-          <p className="section-label" style={{ color: 'var(--green-light)', marginBottom: '0.75rem' }}>
-            Daily rewards
-          </p>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', marginBottom: '1rem', color: 'var(--white)' }}>
-            Spin the wheel every day
-          </h2>
-          <p style={{ color: 'var(--green-light)', lineHeight: 1.7, marginBottom: '2rem', fontSize: '1.05rem' }}>
-            Try your luck daily for free drinks, discounts, and surprise bonuses.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/deals" className="btn btn-primary" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
-              Spin the wheel
-            </Link>
+            <motion.div
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+              variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+            >
+              {signatures.map((item) => (
+                <motion.div
+                  key={item.item_id}
+                  variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(0,0,0,0.09)' }}
+                >
+                  <Link to="/menu" style={{ textDecoration: 'none', display: 'block' }}>
+                    <div className="card" style={{ overflow: 'hidden' }}>
+                      <div style={{
+                        height: 140,
+                        background: item.image_url ? `url(${item.image_url}) center/cover no-repeat` : 'var(--green-xlight)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '2rem',
+                      }}>
+                        {!item.image_url && '☕'}
+                      </div>
+                      <div style={{ padding: '0.9rem 1rem 1rem' }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>
+                          {item.name}
+                        </p>
+                        <p style={{ color: 'var(--green)', fontWeight: 700, fontSize: '0.875rem' }}>
+                          ${item.price.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
     </div>
   )
 }

@@ -8,7 +8,7 @@ export default function Navbar() {
   const location = useLocation()
 
   const navLink = (to: string, label: string) => {
-    const active = location.pathname === to
+    const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
     return (
       <Link
         to={to}
@@ -61,13 +61,17 @@ export default function Navbar() {
 
       {/* Center nav */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        {navLink('/', 'Home')}
         {navLink('/menu', 'Menu')}
-        {navLink('/deals', 'Rewards')}
+        {navLink('/deals', 'Deals')}
         {user?.is_admin && navLink('/admin', 'Admin')}
       </div>
 
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <Link to="/deals" className="btn btn-outline" style={{ padding: '0.55rem 1.25rem', fontSize: '0.875rem' }}>
+          Locations
+        </Link>
         {GRAB_URL && (
           <a
             href={GRAB_URL}

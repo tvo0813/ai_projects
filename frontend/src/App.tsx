@@ -8,6 +8,8 @@ import Deals from './pages/Deals'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Careers from './pages/Careers'
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin"    element={<AdminDashboard />} />
+        <Route path="/privacy"  element={<PrivacyPolicy />} />
+        <Route path="/careers"  element={<Careers />} />
       </Routes>
       <Footer />
     </>

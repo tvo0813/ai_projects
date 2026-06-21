@@ -1,5 +1,7 @@
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .config import settings
 from .database import Base, engine
 from .routers import auth, menu, deals, users
@@ -24,6 +26,11 @@ app.include_router(auth.router)
 app.include_router(menu.router)
 app.include_router(deals.router)
 app.include_router(users.router)
+
+# Serve per-store local images at /static/images/<filename>
+_images_dir = Path(__file__).parent.parent / "menus" / settings.STORE_SLUG / "images"
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/images", StaticFiles(directory=str(_images_dir)), name="static_images")
 
 
 @app.get("/api/health")

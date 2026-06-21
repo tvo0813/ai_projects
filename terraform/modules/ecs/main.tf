@@ -161,8 +161,8 @@ resource "aws_iam_role_policy" "task_menu_s3" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["s3:GetObject"]
-        Resource = ["arn:aws:s3:::${var.menu_s3_bucket}/${var.store_slug}/menu.csv"]
+        Action   = ["s3:GetObject", "s3:HeadObject"]
+        Resource = ["arn:aws:s3:::${var.menu_s3_bucket}/${var.store_slug}/*"]
       },
       {
         Effect   = "Allow"

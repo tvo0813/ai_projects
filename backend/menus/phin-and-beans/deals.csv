@@ -1,0 +1,6 @@
+title,description,discount_type,discount_value,label,expires_at,badge
+Happy Hour,Every day 2–5 PM — all iced drinks at a special price.,percentage,15,15% off,2026-12-31,Daily
+Double Points Tuesday,Earn 2× loyalty points on every purchase every Tuesday.,fixed_amount,0,2× points,2026-12-31,Weekly
+Student Discount,Show your student ID and save on any drink all day.,percentage,10,10% off,,Ongoing
+Free Drink on Your Birthday,Your birthday treat — one free drink of your choice on us.,free_item,0,Free drink,,Birthday
+Buy 5 Get 1 Free,Collect 5 stamps on your loyalty card and your 6th drink is free.,free_item,0,Free 6th drink,,Loyalty

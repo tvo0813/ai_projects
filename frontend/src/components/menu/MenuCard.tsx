@@ -1,71 +1,82 @@
 import { motion } from 'framer-motion'
 import type { MenuItem } from '../../api/menu'
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  espresso: '☕',
-  matcha: '🍵',
-  cold: '🧊',
-  tea: '🫖',
-  pastry: '🥐',
-  food: '🍽️',
-}
-
 interface Props { item: MenuItem }
 
 export default function MenuCard({ item }: Props) {
-  const emoji = CATEGORY_EMOJI[item.category] || '☕'
-
   return (
     <motion.div
-      className="card"
       variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
       transition={{ duration: 0.3 }}
-      style={{ display: 'flex', flexDirection: 'column' }}
-    >
-      {/* Image / placeholder */}
-      <div style={{
-        height: 180,
-        background: item.image_url
-          ? `url(${item.image_url}) center/cover no-repeat`
-          : 'var(--green-xlight)',
+      style={{
+        background: 'var(--white)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        overflow: 'hidden',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '3rem',
-        position: 'relative',
-      }}>
-        {!item.image_url && emoji}
-        {!item.is_available && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'rgba(255,255,255,0.75)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span className="badge badge-red" style={{ fontSize: '0.8rem' }}>Sold out</span>
-          </div>
-        )}
-      </div>
+        flexDirection: 'column',
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+      }}
+      whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(0,0,0,0.10)' }}
+    >
+      {/* Image */}
+      {item.image_url ? (
+        <div style={{
+          height: 200,
+          background: `url(${item.image_url}) center/cover no-repeat`,
+          position: 'relative',
+        }}>
+          {!item.is_available && <SoldOutOverlay />}
+        </div>
+      ) : (
+        <div style={{
+          height: 160,
+          background: 'var(--green-xlight)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}>
+          <span style={{ fontSize: '2.5rem', opacity: 0.5 }}>☕</span>
+          {!item.is_available && <SoldOutOverlay />}
+        </div>
+      )}
 
-      <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'inherit' }}>{item.name}</h3>
-          <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: '1rem', flexShrink: 0 }}>
+      {/* Body */}
+      <div style={{ padding: '1.1rem 1.25rem 1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+          <h3 style={{ fontSize: '0.975rem', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3 }}>
+            {item.name}
+          </h3>
+          <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: '0.975rem', flexShrink: 0 }}>
             ${item.price.toFixed(2)}
           </span>
         </div>
 
         {item.description && (
-          <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{item.description}</p>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, marginTop: '0.1rem' }}>
+            {item.description}
+          </p>
         )}
 
-        {item.tags && item.tags.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.5rem' }}>
-            {item.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="badge badge-green">{tag}</span>
-            ))}
+        {item.tags && item.tags.includes('popular') && (
+          <div style={{ marginTop: 'auto', paddingTop: '0.6rem' }}>
+            <span className="badge badge-gold">Popular</span>
           </div>
         )}
       </div>
     </motion.div>
+  )
+}
+
+function SoldOutOverlay() {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      background: 'rgba(255,255,255,0.75)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span className="badge badge-red" style={{ fontSize: '0.8rem' }}>Sold out</span>
+    </div>
   )
 }
