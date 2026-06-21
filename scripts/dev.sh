@@ -34,9 +34,13 @@ case "$STORE" in
     ENV_FILE="stores/phin-drips.env"
     FRONTEND_PORT=5174
     ;;
+  daboba)
+    ENV_FILE="stores/daboba.env"
+    FRONTEND_PORT=5175
+    ;;
   *)
     echo "Unknown store: $STORE"
-    echo "Available stores: phin-and-beans, phin-drips"
+    echo "Available stores: phin-and-beans, phin-drips, daboba"
     exit 1
     ;;
 esac

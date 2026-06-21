@@ -185,7 +185,6 @@ jobs:
         working-directory: terraform/envs/phin-and-beans/dev
         env:
           TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_db_password:           ${{ secrets.DEV_PAB_DB_PASSWORD }}
           TF_VAR_secret_key:            ${{ secrets.DEV_PAB_SECRET_KEY }}
           TF_VAR_stripe_secret_key:     ${{ secrets.DEV_PAB_STRIPE_SECRET_KEY }}
           TF_VAR_stripe_webhook_secret: ${{ secrets.DEV_PAB_STRIPE_WEBHOOK_SECRET }}
@@ -206,8 +205,6 @@ jobs:
           echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
           echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
           echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
-          echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
-          echo "ecs_sg=$(terraform output -raw ecs_security_group)"         >> "$GITHUB_OUTPUT"
 
       - name: Force new ECS deployment
         run: |
@@ -219,16 +216,6 @@ jobs:
           aws ecs wait services-stable \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ env.AWS_REGION_DEV }}
-
-      - name: Run DB migrations
-        run: |
-          aws ecs run-task \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --task-definition phin-and-beans-dev-api \
-            --launch-type FARGATE \
-            --overrides '{"containerOverrides":[{"name":"coffee-tea-api","command":["alembic","upgrade","head"]}]}' \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
             --region ${{ env.AWS_REGION_DEV }}
 
       - name: Download frontend dist
@@ -336,7 +323,6 @@ jobs:
         working-directory: terraform/envs/phin-and-beans/prod
         env:
           TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_db_password:           ${{ secrets.PROD_PAB_DB_PASSWORD }}
           TF_VAR_secret_key:            ${{ secrets.PROD_PAB_SECRET_KEY }}
           TF_VAR_stripe_secret_key:     ${{ secrets.PROD_PAB_STRIPE_SECRET_KEY }}
           TF_VAR_stripe_webhook_secret: ${{ secrets.PROD_PAB_STRIPE_WEBHOOK_SECRET }}
@@ -356,8 +342,6 @@ jobs:
           echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
           echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
           echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
-          echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
-          echo "ecs_sg=$(terraform output -raw ecs_security_group)"         >> "$GITHUB_OUTPUT"
 
       - name: Force new ECS deployment
         run: |
@@ -369,16 +353,6 @@ jobs:
           aws ecs wait services-stable \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ env.AWS_REGION_PROD }}
-
-      - name: Run DB migrations
-        run: |
-          aws ecs run-task \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --task-definition phin-and-beans-prod-api \
-            --launch-type FARGATE \
-            --overrides '{"containerOverrides":[{"name":"coffee-tea-api","command":["alembic","upgrade","head"]}]}' \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
             --region ${{ env.AWS_REGION_PROD }}
 
       - name: Download frontend dist

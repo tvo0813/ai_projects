@@ -5,9 +5,6 @@ import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import Menu from './pages/Menu'
 import Deals from './pages/Deals'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import AdminDashboard from './pages/admin/AdminDashboard'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Careers from './pages/Careers'
 import Locations from './pages/Locations'
@@ -31,13 +28,10 @@ export default function App() {
       />
       <Navbar />
       <Routes>
-        <Route path="/"         element={<Home />} />
-        <Route path="/menu"     element={<Menu />} />
-        <Route path="/deals"    element={<Deals />} />
-        <Route path="/login"    element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin"    element={<AdminDashboard />} />
-        <Route path="/privacy"  element={<PrivacyPolicy />} />
+        <Route path="/"          element={<Home />} />
+        <Route path="/menu"      element={<Menu />} />
+        <Route path="/deals"     element={<Deals />} />
+        <Route path="/privacy"   element={<PrivacyPolicy />} />
         <Route path="/careers"   element={<Careers />} />
         <Route path="/locations" element={<Locations />} />
       </Routes>

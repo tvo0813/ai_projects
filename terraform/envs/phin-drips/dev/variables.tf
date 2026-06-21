@@ -8,16 +8,6 @@ variable "store_domain" {
   default = ""
 }
 
-variable "db_username" {
-  type    = string
-  default = "postgres"
-}
-
-variable "db_password" {
-  type      = string
-  sensitive = true
-}
-
 variable "secret_key" {
   type      = string
   sensitive = true

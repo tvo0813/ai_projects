@@ -23,38 +23,34 @@ frontend/src/
 ├── config/
 │   └── store.ts               — STORE_NAME, STORE_TAGLINE, GRAB_URL (from VITE_ env vars)
 ├── api/
-│   ├── client.ts              — Axios base instance + JWT interceptor + 401 redirect
-│   ├── auth.ts                — register(), login(), getMe()
+│   ├── client.ts              — Axios base instance
 │   ├── menu.ts                — getMenuItems(), getCategories(), MenuItem interface
-│   ├── deals.ts               — getPublicDeals(), spinForDeal(), validateCode()
+│   ├── deals.ts               — getPublicDeals()
+│   ├── chat.ts                — sendChatMessage(messages)
 │   └── locations.ts           — getLocations(), Location interface
 ├── store/
-│   ├── useAuthStore.ts        — user + JWT token, persisted to localStorage "auth-storage"
 │   └── useCartStore.ts        — cart items + deal discount, persisted to "cart-storage"
 ├── pages/
-│   ├── Home.tsx               — hero, Vietnam origin story, 4 pillars, signature drinks grid
+│   ├── Home.tsx               — hero, Vietnam origin story, 4 pillars, signature drinks grid, chatbot
 │   ├── Menu.tsx               — section-based menu with sticky nav + IntersectionObserver scroll-spy
 │   ├── Deals.tsx              — fetches /api/deals/public; deal cards; empty state if none
 │   ├── Locations.tsx          — Google Maps embed cards + address/hours/phone
 │   ├── Careers.tsx            — static: benefits, 3-step apply process, email CTA
-│   ├── PrivacyPolicy.tsx      — loads /privacy-policy.txt from public folder
-│   ├── Login.tsx              — not linked from public nav; navigate to /login directly
-│   ├── Register.tsx
-│   └── admin/
-│       └── AdminDashboard.tsx — menu CRUD, deal management, orders (is_admin only)
+│   └── PrivacyPolicy.tsx      — loads /privacy-policy.txt from public folder
 └── components/
     ├── layout/
-    │   ├── Navbar.tsx         — Home/Menu/Deals center; Locations + Order (Grab) right; admin controls if is_admin
-    │   └── Footer.tsx         — copyright left; Careers + Privacy Policy + Instagram/Facebook/TikTok right
+    │   ├── Navbar.tsx         — Home/Menu/Deals/Locations center; Order (Grab) button right; no auth UI
+    │   └── Footer.tsx         — copyright left; Careers + Privacy Policy + social links right
     ├── menu/
-    │   └── MenuCard.tsx       — circular image (140px); click opens description modal (Framer Motion AnimatePresence)
-    └── deals/
-        └── SpinWheel.tsx      — animated spin wheel component
+    │   └── MenuCard.tsx       — circular image (140px); click opens description modal (Framer Motion)
+    ├── deals/
+    │   └── SpinWheel.tsx      — animated spin wheel component (visual only — no backend spin endpoint active)
+    └── ChatBot.tsx            — menu assistant on Home page; suggestion pills; typing indicator; conversation history
 ```
 
 ## Routes
 
-| Path | Component | Auth |
+| Path | Component | Notes |
 |---|---|---|
 | `/` | Home | Public |
 | `/menu` | Menu | Public |
@@ -62,25 +58,18 @@ frontend/src/
 | `/locations` | Locations | Public |
 | `/careers` | Careers | Public |
 | `/privacy` | PrivacyPolicy | Public |
-| `/login` | Login | Public (not in nav) |
-| `/register` | Register | Public (not in nav) |
-| `/admin` | AdminDashboard | `is_admin` only |
+
+Login, Register, and AdminDashboard are **not routed** — removed from `App.tsx`.
 
 ## Menu Page Details
 
 - Section layout: Signature Drinks, Coffee, Matcha, Latte, Tea, Hot Drinks
 - Sticky sub-nav with IntersectionObserver scroll-spy highlighting the active section
-- Signature items tagged with their base category (e.g. `coffee`) appear in both the Signature section AND that base section
+- Signature items tagged with their base category appear in both sections
 - Grid: `repeat(auto-fill, minmax(160px, 1fr))` — 4–5 cards per row
 - **MenuCard:** circular image → click opens AnimatePresence modal with full image, name, price, description, badges
 
 ## Zustand Stores
-
-### useAuthStore
-```typescript
-{ user: User | null, token: string | null, setAuth(user, token): void, logout(): void }
-```
-Persisted to localStorage `"auth-storage"`.
 
 ### useCartStore
 ```typescript
@@ -90,24 +79,15 @@ Persisted to localStorage `"auth-storage"`.
 ```
 Persisted to localStorage `"cart-storage"`.
 
+> `useAuthStore` exists in the codebase but is not used by any active route or component.
+
 ## Axios Client (`api/client.ts`)
 
 ```typescript
 const client = axios.create({ baseURL: '/api' })
-
-// Inject JWT on every request
-client.interceptors.request.use(config => {
-  const token = useAuthStore.getState().token
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// 401 → logout + redirect
-client.interceptors.response.use(res => res, err => {
-  if (err.response?.status === 401) { logout(); window.location.href = '/login' }
-  return Promise.reject(err)
-})
 ```
+
+No auth interceptor — all active endpoints are public.
 
 ## Vite Config
 
@@ -121,7 +101,7 @@ server: {
 }
 ```
 
-Both `/api` and `/static` proxy to the backend in dev. `/static` is needed for local menu item images.
+Both `/api` and `/static` proxy to the backend in dev.
 
 ## CSS Design Tokens
 

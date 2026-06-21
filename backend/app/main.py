@@ -3,10 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .config import settings
-from .database import Base, engine
-from .routers import auth, menu, deals, users, locations, chat
-
-Base.metadata.create_all(bind=engine)
+from .routers import menu, deals, locations, chat
 
 app = FastAPI(title=f"{settings.STORE_NAME} API", version="1.0.0", docs_url="/api/docs", redoc_url="/api/redoc")
 
@@ -22,10 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
 app.include_router(menu.router)
 app.include_router(deals.router)
-app.include_router(users.router)
 app.include_router(locations.router)
 app.include_router(chat.router)
 

@@ -1,6 +1,44 @@
 # Data Models — Full Reference
 
-## SQLAlchemy ORM Models
+> **Current state:** No database is deployed. SQLAlchemy models exist in the codebase for future re-enablement but are not used by any active route. All data is served from per-store CSV files.
+
+## CSV-Backed Data (active)
+
+### Menu Item (from `menu.csv`)
+```
+item_id, name, category, description, price, image_url, is_available, tags, customizations
+```
+- `tags` — pipe-separated: `hot|iced|popular|signature|coffee|matcha|latte|tea`
+- `customizations` — `key=opt1|opt2;key2=opt1|opt2` e.g. `milk=Whole|Oat|Almond;size=12oz|16oz`
+- `item_id` — leave blank; UUID derived from `(store_slug + name)` so IDs survive restarts
+
+### Public Deal (from `deals.csv`)
+```
+title, description, discount_type, discount_value, label, expires_at, badge
+```
+- `discount_type` — `percentage` | `fixed_amount` | `free_item`
+- `badge` — `green` | `gold` | `red` | `gray`
+
+### Location (from `locations.csv`)
+```
+name, address, city, state, zip, country, hours, phone
+```
+
+## Pydantic Schemas (active)
+
+### Menu Schemas (`schemas/menu.py`)
+- `MenuItem` — id, name, description, price, category, image_url, is_available, customization_options
+- `MenuItemCreate` — same fields without id
+- `MenuItemUpdate` — all optional fields for partial update
+
+### Deal Schemas (`schemas/deal.py`)
+- `PublicDealOut` — title, description, discount_type, discount_value, label, expires_at, badge
+
+---
+
+## SQLAlchemy ORM Models (inactive — no DB deployed)
+
+These exist in `backend/app/models/` and can be re-enabled by adding RDS to Terraform and registering the auth/users/orders routers in `main.py`.
 
 ### User (`models/user.py`)
 ```python
@@ -12,12 +50,8 @@ phone: str | None
 is_active: bool = True
 is_admin: bool = False
 loyalty_points: int = 0
-created_at: datetime (server default)
-updated_at: datetime (server default, onupdate)
-
-# Relationships
-orders: List[Order]
-deal_redemptions: List[UserDealRedemption]
+created_at: datetime
+updated_at: datetime
 ```
 
 ### Order (`models/order.py`)
@@ -35,11 +69,6 @@ applied_deal_code: str | None
 discount_amount: float = 0.0
 created_at: datetime
 updated_at: datetime
-
-# Relationships
-user: User
-items: List[OrderItem]
-deal_redemptions: List[UserDealRedemption]
 ```
 
 ### OrderItem (`models/order.py`)
@@ -50,7 +79,7 @@ item_id: str
 item_name: str
 quantity: int
 unit_price: float
-customizations: dict (JSON column)  # {"size": "large", "milk": "oat", "shots": 2, ...}
+customizations: dict (JSON)   # {"size": "large", "milk": "oat"}
 created_at: datetime
 ```
 
@@ -62,50 +91,21 @@ deal_type: str       # "spin_to_win" | "flash_sale" | "loyalty_reward"
 title: str
 description: str
 discount_type: str   # "percentage" | "fixed_amount" | "free_item"
-discount_value: float   # percent (0-100) or dollar amount
-win_probability: float  # 0.0–1.0, used for spin_to_win selection
+discount_value: float
+win_probability: float  # 0.0–1.0 for spin_to_win
 max_redemptions: int | None
 current_redemptions: int = 0
 is_active: bool = True
 expires_at: datetime | None
-mechanics: dict (JSON column)  # arbitrary deal-specific config
+mechanics: dict (JSON)
 created_at: datetime
-
-# Relationships
-redemptions: List[UserDealRedemption]
 ```
 
-### UserDealRedemption (`models/deal.py`)
-```python
-id: int (PK)
-user_id: int (FK → users.id)
-deal_id: int (FK → deals.id)
-code_used: str
-redeemed_at: datetime (server default)
-order_id: int | None (FK → orders.id)  # set when order is placed
+## Order Status State Machine (inactive)
+
+```
+received → brewing → ready_for_pickup → completed
+any      → cancelled
 ```
 
-## Pydantic Schemas
-
-### User Schemas (`schemas/user.py`)
-- `UserCreate` — email, password, full_name, phone
-- `UserLogin` — email, password
-- `UserOut` — id, email, full_name, is_admin, loyalty_points, created_at
-- `Token` — access_token, token_type="bearer"
-- `TokenData` — email (extracted from JWT)
-
-### Order Schemas (`schemas/order.py`)
-- `OrderCreate` — items, customer_name, customer_email, special_instructions, deal_code, stripe_payment_id
-- `OrderOut` — full order including nested `OrderItemOut` list
-- `OrderItemOut` — item_id, item_name, quantity, unit_price, customizations
-- `OrderStatusUpdate` — status
-
-### Menu Schemas (`schemas/menu.py`)
-- `MenuItem` — id, name, description, price, category, image_url, is_available, customization_options
-- `MenuItemCreate` — same fields without id
-- `MenuItemUpdate` — all optional fields for partial update
-
-### Deal Schemas (`schemas/deal.py`)
-- `DealCreate` — all deal fields
-- `DealOut` — full deal including redemption counts
-- `SpinResult` — won: bool, deal_code: str | None, message: str, discount_type: str | None, discount_value: float | None
+Invalid transitions return HTTP 400. Enforced in `routers/orders.py`.

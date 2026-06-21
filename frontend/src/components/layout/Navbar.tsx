@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../../store/useAuthStore'
+import { Link, useLocation } from 'react-router-dom'
 import { STORE_NAME, GRAB_URL } from '../../config/store'
 
 export default function Navbar() {
-  const { user, logout } = useAuthStore()
-  const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -17,7 +14,6 @@ export default function Navbar() {
     { to: '/menu', label: 'Menu' },
     { to: '/deals', label: 'Deals' },
     { to: '/locations', label: 'Locations' },
-    ...(user?.is_admin ? [{ to: '/admin', label: 'Admin' }] : []),
   ]
 
   const closeMenu = () => setMenuOpen(false)
@@ -93,18 +89,6 @@ export default function Navbar() {
               Order
             </a>
           )}
-          {user?.is_admin && (
-            <>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                Hi, {user.full_name.split(' ')[0]}
-              </span>
-              <button onClick={() => { logout(); navigate('/') }}
-                className="btn btn-ghost"
-                style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}>
-                Sign out
-              </button>
-            </>
-          )}
         </div>
 
         {/* Mobile — Order + hamburger */}
@@ -147,15 +131,6 @@ export default function Navbar() {
             {label}
           </Link>
         ))}
-        {user?.is_admin && (
-          <button onClick={() => { logout(); navigate('/'); closeMenu() }} style={{
-            marginTop: '1rem', background: 'none', border: 'none',
-            cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-muted)',
-            textAlign: 'left', padding: '0.5rem 0',
-          }}>
-            Sign out
-          </button>
-        )}
       </div>
     </>
   )

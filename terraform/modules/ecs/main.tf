@@ -180,10 +180,6 @@ resource "aws_iam_role_policy" "task_menu_s3" {
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.name}-cluster"
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
-  }
 }
 
 resource "aws_ecs_task_definition" "backend" {
@@ -240,9 +236,9 @@ resource "aws_ecs_service" "backend" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = var.public_subnet_ids
     security_groups  = [aws_security_group.ecs.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {

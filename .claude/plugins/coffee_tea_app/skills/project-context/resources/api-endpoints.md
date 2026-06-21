@@ -1,13 +1,12 @@
 # API Endpoints — Full Reference
 
-All endpoints prefixed with `/api`. JWT required unless marked Public.
+All endpoints prefixed with `/api`. No auth required on any active endpoint.
 
-## Auth — `/api/auth`
+## Health
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/auth/register` | Public | Create account; returns `Token + UserOut` |
-| POST | `/auth/login` | Public | Login; returns `Token + UserOut` |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | `{"status": "ok", "service": "<STORE_NAME> API"}` |
 
 ## Menu — `/api/menu`
 
@@ -16,26 +15,12 @@ All endpoints prefixed with `/api`. JWT required unless marked Public.
 | GET | `/menu/` | Public | List all items; optional `?category=` filter |
 | GET | `/menu/categories` | Public | List distinct categories |
 | GET | `/menu/{item_id}` | Public | Get single item |
-| POST | `/menu/` | Admin | Create item |
-| PUT | `/menu/{item_id}` | Admin | Update item |
-| DELETE | `/menu/{item_id}` | Admin | Delete item |
 
 ## Deals — `/api/deals`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/deals/public` | Public | Active deals from `deals.csv` — no auth |
-| POST | `/deals/spin` | User | Spin the wheel; returns `SpinResult` |
-| GET | `/deals/validate/{code}` | User | Validate a deal code |
-| GET | `/deals/` | Admin | List all DB deals |
-| POST | `/deals/` | Admin | Create deal |
-| PATCH | `/deals/{id}/toggle` | Admin | Toggle deal active/inactive |
-
-### SpinResult
-```json
-{ "won": true, "deal_code": "BREW-A1B2C", "message": "You won 20% off!",
-  "discount_type": "percentage", "discount_value": 20.0 }
-```
+| GET | `/deals/public` | Public | Active deals from `deals.csv` |
 
 ### PublicDealOut (from deals.csv)
 ```json
@@ -67,31 +52,37 @@ All endpoints prefixed with `/api`. JWT required unless marked Public.
 
 Frontend tries `maps_embed_url_keyed` first; falls back to `maps_embed_url_legacy` via iframe `onError`.
 
-## Orders — `/api/orders`
-
-> Backend implemented but not surfaced in the public UI. Re-enablement planned.
+## Chat — `/api/chat`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/orders/payment-intent` | User | Calc total, apply deal, create Stripe intent |
-| POST | `/orders/` | User | Place order + Square POS sync |
-| GET | `/orders/my` | User | Order history |
-| GET | `/orders/` | Admin | All orders |
-| GET | `/orders/{id}` | User | Single order |
-| PATCH | `/orders/{id}/status` | Admin | Update status (state machine enforced) |
-| POST | `/orders/webhook/stripe` | Public | Stripe webhook handler |
+| POST | `/chat/` | Public | Menu chatbot powered by Ollama |
 
-## Users — `/api/users`
+### Request
+```json
+{ "messages": [{"role": "user", "content": "What iced drinks do you have?"}] }
+```
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/users/me` | User | Current user profile |
-| GET | `/users/` | Admin | List all users |
-| POST | `/users/{id}/make-admin` | Admin | Promote user to admin |
+### Response
+```json
+{ "message": "Here are some great iced options: Brown Sugar Milk Tea — $6.50, ..." }
+```
 
-## Health + Static
+## Static
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/health` | `{"status": "ok", "service": "<STORE_NAME> API"}` |
 | GET | `/static/images/{filename}` | Local menu item images (FastAPI StaticFiles) |
+
+---
+
+## Disabled Endpoints (not registered)
+
+The following are implemented in the codebase but not active. Re-enable by adding them to `main.py` and provisioning RDS.
+
+- `POST /api/auth/register` — create account
+- `POST /api/auth/login` — login, returns JWT
+- `GET/POST /api/orders/*` — order placement + Stripe payment
+- `GET /api/users/me` — current user profile
+- `POST /api/deals/spin` — spin the deals wheel
+- `POST/PUT/DELETE /api/menu/` — admin menu CRUD

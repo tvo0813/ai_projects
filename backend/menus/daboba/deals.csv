@@ -1,0 +1,4 @@
+title,description,discount_type,discount_value,label,expires_at,badge
+Boba Happy Hour,Every day 2–5 PM — all drinks discounted.,percentage,15,15% off,2026-12-31,Daily
+Buy 2 Get 1 Free,Order any 2 drinks and get a third of equal or lesser value free.,fixed_amount,0,B2G1,2026-12-31,Limited
+Double Points Tuesday,Earn 2× loyalty points on every purchase every Tuesday.,fixed_amount,0,2× points,2026-12-31,Weekly

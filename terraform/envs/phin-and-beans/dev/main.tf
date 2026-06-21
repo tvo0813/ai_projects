@@ -36,7 +36,6 @@ module "vpc" {
   cidr                 = "10.0.0.0/16"
   azs                  = ["${var.aws_region}a", "${var.aws_region}b"]
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
 }
 
 module "secrets" {
@@ -44,7 +43,6 @@ module "secrets" {
   name   = local.name
   secrets = {
     SECRET_KEY            = var.secret_key
-    DATABASE_URL          = "postgresql://${var.db_username}:${var.db_password}@${module.rds.endpoint}/phin_and_beans_dev"
     STRIPE_SECRET_KEY     = var.stripe_secret_key
     STRIPE_WEBHOOK_SECRET = var.stripe_webhook_secret
     SQUARE_ACCESS_TOKEN   = var.square_access_token
@@ -57,7 +55,6 @@ module "ecs" {
   name                 = local.name
   vpc_id               = module.vpc.vpc_id
   public_subnet_ids    = module.vpc.public_subnet_ids
-  private_subnet_ids   = module.vpc.private_subnet_ids
   backend_image        = var.backend_image
   secret_arn           = module.secrets.secret_arn
   store_name           = local.store_name
@@ -72,21 +69,6 @@ module "ecs" {
   ollama_base_url      = var.ollama_base_url
   ollama_model         = var.ollama_model
   desired_count        = 1
-}
-
-module "rds" {
-  source                = "../../../modules/rds"
-  name                  = local.name
-  vpc_id                = module.vpc.vpc_id
-  subnet_ids            = module.vpc.private_subnet_ids
-  ecs_security_group_id = module.ecs.ecs_security_group_id
-  db_name               = "phin_and_beans_dev"
-  db_username           = var.db_username
-  db_password           = var.db_password
-  instance_class        = "db.t3.micro"
-  skip_final_snapshot   = true
-  deletion_protection   = false
-  multi_az              = false
 }
 
 module "frontend" {
