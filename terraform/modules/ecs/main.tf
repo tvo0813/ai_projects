@@ -202,7 +202,6 @@ resource "aws_ecs_task_definition" "backend" {
       { name = "STRIPE_WEBHOOK_SECRET", valueFrom = "${var.secret_arn}:STRIPE_WEBHOOK_SECRET::" },
       { name = "SQUARE_ACCESS_TOKEN",   valueFrom = "${var.secret_arn}:SQUARE_ACCESS_TOKEN::" },
       { name = "SQUARE_LOCATION_ID",    valueFrom = "${var.secret_arn}:SQUARE_LOCATION_ID::" },
-      { name = "DATABASE_URL",          valueFrom = "${var.secret_arn}:DATABASE_URL::" },
     ]
     environment = [
       { name = "STORE_NAME",           value = var.store_name },
