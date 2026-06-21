@@ -7,7 +7,7 @@
     "grab_url": "https://food.grab.com/your-phin-and-beans-listing",
     "db_name_dev": "phin_and_beans_dev",
     "db_name_prod": "phin_and_beans",
-    "env_prefix": "PHIN_AND_BEANS"
+    "env_prefix": "PAB"
   },
   {
     "slug": "phin-drips",
@@ -17,6 +17,6 @@
     "grab_url": "https://food.grab.com/your-phin-drips-listing",
     "db_name_dev": "phin_drips_dev",
     "db_name_prod": "phin_drips",
-    "env_prefix": "PHIN_DRIPS"
+    "env_prefix": "PD"
   }
 ]

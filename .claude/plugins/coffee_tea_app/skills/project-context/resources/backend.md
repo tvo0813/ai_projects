@@ -1,6 +1,6 @@
 # Backend — Detailed Reference
 
-## Stack & Versions
+## Stack
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -14,49 +14,48 @@
 | python-jose[cryptography] | 3.3.0 | JWT |
 | passlib[bcrypt] | 1.7.4 | Password hashing |
 | stripe | 9.9.0 | Stripe SDK |
-| httpx | 0.27.0 | Async HTTP (Square calls) |
-| boto3 | 1.34.131 | AWS SDK (DynamoDB) |
+| httpx | 0.27.0 | Async HTTP (Square) |
+| boto3 | 1.34.131 | AWS SDK (S3 + DynamoDB) |
 
 ## Directory Structure
 
 ```
 backend/app/
-├── __init__.py
-├── main.py          — FastAPI app init, CORS middleware, router registration
-├── config.py        — Pydantic Settings; all env vars; import: from app.config import settings
-├── database.py      — SQLAlchemy engine, SessionLocal, Base, get_db() dependency
-├── models/
-│   ├── user.py      — User ORM model
-│   ├── order.py     — Order + OrderItem ORM models
-│   └── deal.py      — Deal + UserDealRedemption ORM models
-├── schemas/
-│   ├── user.py      — UserCreate, UserLogin, UserOut, Token, TokenData
-│   ├── order.py     — OrderCreate, OrderOut, OrderItemOut, OrderStatusUpdate
-│   ├── menu.py      — MenuItem, MenuItemCreate, MenuItemUpdate
-│   └── deal.py      — DealCreate, DealOut, SpinResult
-├── routers/
-│   ├── auth.py      — POST /register, POST /login
-│   ├── menu.py      — GET|POST|PUT|DELETE /menu/
-│   ├── orders.py    — payment-intent, create order, history, status, Stripe webhook
-│   ├── deals.py     — spin, validate, list, create, toggle
-│   └── users.py     — /me, list users, make-admin
-├── services/
-│   ├── deal_service.py    — spin logic, code generation, validation, discount calc
-│   ├── payment_service.py — Stripe payment intent, webhook verification
-│   ├── square_service.py  — Square POS order push
-│   └── menu_service.py    — in-memory dict (dev) / DynamoDB (prod)
-└── utils/
-    └── auth.py      — JWT create/verify, password hash/verify, FastAPI auth dependencies
+├── main.py           — app init, CORS, router registration, StaticFiles mount
+├── config.py         — Pydantic Settings; from app.config import settings
+├── constants.py      — ORDER_STATUSES list
+├── database.py       — engine, SessionLocal, Base, get_db()
+├── models/           — SQLAlchemy ORM (user.py, order.py, deal.py)
+├── schemas/          — Pydantic request/response (user.py, order.py, menu.py, deal.py)
+├── routers/          — thin HTTP handlers (auth, menu, deals, locations, orders, users)
+├── services/         — all business logic
+└── utils/auth.py     — JWT, password hash, FastAPI auth dependencies
 ```
+
+## Config (`config.py`)
+
+```python
+STORE_NAME, STORE_SLUG, STORE_DOMAIN
+DATABASE_URL, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
+STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID
+AWS_REGION, MENU_S3_BUCKET
+GOOGLE_MAPS_API_KEY     # blank = legacy Maps embed fallback
+DYNAMODB_TABLE_MENU, DYNAMODB_TABLE_DEALS
+ENVIRONMENT             # "development" = local CSV + in-memory menu
+```
+
+## Static Files
+
+`main.py` mounts `StaticFiles` at `/static/images` → `backend/menus/<STORE_SLUG>/images/`. The Vite dev server proxies `/static` to `http://localhost:8000`, so local images are seamlessly accessible in development.
 
 ## Authentication Pattern
 
 ```python
-# In any router that needs auth:
 from app.utils.auth import get_current_active_user, get_admin_user
 
 @router.get("/my")
-def get_my_orders(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def get_my_orders(user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     ...
 
 @router.post("/menu/")
@@ -64,50 +63,54 @@ def create_item(data: MenuItemCreate, admin: User = Depends(get_admin_user), db:
     ...
 ```
 
-## Config Access Pattern
+## Services
 
-```python
-from app.config import settings
+### menu_loader.py
+- `load_menu(store_slug, s3_bucket, aws_region)` — S3 first, local `backend/menus/<slug>/menu.csv` fallback
+- Resolves `image_url` → S3 presigned URL (prod) or `/static/images/<filename>` (local)
 
-settings.DATABASE_URL
-settings.SECRET_KEY
-settings.STRIPE_SECRET_KEY
-settings.SQUARE_ACCESS_TOKEN
-settings.ENVIRONMENT   # "development" → in-memory menu; anything else → DynamoDB
-```
+### deals_loader.py
+- `load_deals(store_slug, s3_bucket, aws_region)` — S3 first, local `deals.csv` fallback; returns `[]` if missing
+- Returns `PublicDeal` dataclass instances
 
-## Service Layer — Key Functions
+### locations_loader.py
+- `load_locations(store_slug, s3_bucket, aws_region, api_key)` — S3 first, local fallback
+- `Location` dataclass:
+  - `maps_embed_url_keyed()` → official Google Maps Embed API URL (requires `api_key`); `""` if no key
+  - `maps_embed_url_legacy` property → keyless fallback embed URL
+  - `maps_link_url` property → Google Maps search link
+  - `full_address` property → `"{address}, {city}, {state} {zip}, {country}"`
 
 ### deal_service.py
-- `generate_deal_code()` → `"BREW-XXXXX"` format, cryptographically secure
-- `spin_for_deal(user, db)` → selects deal by `win_probability`, saves `UserDealRedemption`, returns `SpinResult`
-- `validate_deal_code(code, db)` → checks exists, not expired, not already redeemed
-- `apply_deal_to_order(code, subtotal, db)` → returns `(final_total_cents, discount_cents)`
-- `create_deal(data, db)` → persists to DB
+- `generate_deal_code()` → `"BREW-XXXXX"` (cryptographically secure)
+- `spin_for_deal(user, db)` → selects by `win_probability`, returns `SpinResult`
+- `validate_deal_code(code, db)` → checks existence, expiry, redemption
+- `apply_deal_to_order(code, subtotal, db)` → `(final_total_cents, discount_cents)`
 
 ### payment_service.py
-- `create_payment_intent(amount_cents, currency, metadata)` → Stripe API call, returns `{client_secret, payment_intent_id}`
-- `verify_payment(payment_intent_id)` → checks Stripe status
-- `verify_webhook(payload, sig_header)` → validates Stripe webhook signature, returns event
+- `create_payment_intent(amount_cents, currency, metadata)` → Stripe API
+- `verify_webhook(payload, sig_header)` → validates Stripe signature
 
 ### square_service.py
-- `push_order_to_pos(order_data)` → async httpx POST to Square `/v2/orders` with line items
-- Called automatically on order creation in `routers/orders.py`
+- `push_order_to_pos(order_data)` → async httpx POST to Square `/v2/orders`
 
 ### menu_service.py
-- `ENVIRONMENT=development`: in-memory Python dict
-- Production: boto3 DynamoDB reads/writes to table named by `DYNAMODB_TABLE_MENU` env var (default: `phin-and-beans-menu`)
+- `ENVIRONMENT=development` → in-memory Python dict loaded from CSV at startup
+- Production → boto3 DynamoDB reads/writes to `DYNAMODB_TABLE_MENU`
 
-## CORS Config (main.py)
+## CORS
 
-Allowed origins: `["http://localhost:5173", "http://localhost:3000"]` + `https://{STORE_DOMAIN}` if `STORE_DOMAIN` env var is set
+```python
+origins = ["http://localhost:5173", "http://localhost:3000"]
+if settings.STORE_DOMAIN:
+    origins.append(f"https://{settings.STORE_DOMAIN}")
+```
 
 ## Order Status State Machine
 
-Valid transitions enforced in `routers/orders.py`:
 ```
-received → brewing
-brewing → ready_for_pickup
-ready_for_pickup → completed
-any → cancelled
+received → brewing → ready_for_pickup → completed
+any      → cancelled
 ```
+
+Invalid transitions return HTTP 400. Enforced in `routers/orders.py`.

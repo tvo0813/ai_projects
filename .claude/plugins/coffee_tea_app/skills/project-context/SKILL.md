@@ -1,247 +1,237 @@
 ---
 name: coffee-tea-app-context
-description: Load this skill when working on any feature, bug fix, or question about this multi-store coffee & tea shop app. Covers full-stack architecture, data models, service layer, auth, integrations, store config system, and development workflow.
-version: 1.2.0
+description: Load this skill when working on any feature, bug fix, or question about this multi-store coffee & tea shop app. Covers full-stack architecture, data models, service layer, auth, integrations, store config system, CI/CD, and development workflow.
+version: 1.5.0
 ---
 
 # Coffee & Tea Shop App — Project Context
 
 ## What This App Is
 
-A multi-store coffee & tea shop ordering platform. The same codebase powers multiple stores (e.g. "Phin and Beans", "Phin Drip") via environment variables — no code changes needed to launch a new store. Customers browse a menu, spin a deals wheel, add items to cart with customizations, pay via Stripe, and track orders. Admins manage the menu, view live orders, update statuses, and create deals.
+A multi-store Vietnamese-inspired coffee & tea shop platform. One codebase powers multiple independent stores via environment variables — no code changes to launch a new store. Customers browse the menu, view deals, find locations, and order via Grab Food. Admins manage menu, deals, and orders.
 
-**Stack:**
-- Frontend: React 18 + Vite + TypeScript + Zustand + Axios + Framer Motion + Stripe Elements
-- Backend: Python FastAPI + SQLAlchemy 2 + Alembic + PostgreSQL 16
-- External: Stripe (payments), Square POS (order sync), AWS DynamoDB (prod menu storage)
-- Dev: Docker Compose (db + backend + frontend all containerised)
+**Active stores:** `phin-and-beans` (Phin and Beans) · `phin-drips` (Phin Drips)
+
+**Stack:** React 18 + Vite + TypeScript · Python FastAPI · PostgreSQL 16 · Stripe · Square POS · AWS ECS/RDS/S3/CloudFront · Terraform · GitHub Actions
+
+> Order placement is implemented in the backend but not surfaced in the public UI — will be re-enabled in a future release. The app is currently a public showcase/menu site.
 
 ---
 
-## Running the App
+## Running the App Locally
 
 ```bash
-# Full stack (recommended)
-cp backend/.env.example backend/.env   # fill in keys
-docker compose up
+# Run both stores simultaneously — each in its own terminal
+docker compose --env-file stores/phin-and-beans.env -p phin-and-beans up
+docker compose --env-file stores/phin-drips.env     -p phin-drips     up
+```
+
+| Store | Frontend | Backend API | Swagger |
+|---|---|---|---|
+| Phin and Beans | http://localhost:5173 | http://localhost:8000 | http://localhost:8000/api/docs |
+| Phin Drips | http://localhost:5174 | http://localhost:8001 | http://localhost:8001/api/docs |
+
+The `-p` flag gives each stack an isolated Docker project name — separate containers, networks, and named Postgres volumes. Port offsets are set in each store's `.env` file (`FRONTEND_PORT`, `BACKEND_PORT`, `DB_PORT`, `DB_VOLUME`).
+
+```bash
+# Restart just the backend after editing a CSV file
+docker compose -p phin-and-beans restart coffee-tea-api
 
 # Frontend only
-cd frontend && npm install && npm run dev   # http://localhost:5173 (uses frontend/.env)
+cd frontend && npm install && npm run dev
 
 # Backend only
 cd backend && python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt && cp .env.example .env
-uvicorn app.main:app --reload             # http://localhost:8000
+uvicorn app.main:app --reload
 
 # DB migrations
 cd backend && alembic upgrade head
 alembic revision --autogenerate -m "description"
-```
 
-URLs: Frontend → 5173, Backend API → 8000, Swagger → http://localhost:8000/api/docs
+# Share locally with remote viewers
+ngrok http 5173   # or 5174 for Phin Drips
+```
 
 ---
 
 ## Multi-Store System
 
-**Active stores:** `phin-and-beans` (Phin and Beans), `phin-drips` (Phin Drips)
-**Registry:** `stores/stores.json` — source of truth for all store slugs, names, domains, DB names
-
-### Local dev — pick a store
-```bash
-docker compose --env-file stores/phin-and-beans.env up
-docker compose --env-file stores/phin-drips.env up
-```
+**Registry:** `stores/stores.json` — source of truth. Each entry: `slug`, `name`, `tagline`, `domain`, `grab_url`, `db_name_dev`, `db_name_prod`, `env_prefix` (e.g. `PAB`, `PD` — maps to GitHub secret naming).
 
 ### Per-store env files (`stores/<slug>.env`)
 
-| Variable | Layer | Purpose |
-|---|---|---|
-| `STORE_NAME` | Backend | API title, Square idempotency key prefix |
-| `STORE_DOMAIN` | Backend | CORS allowed origin; blank = skip |
-| `STORE_TAGLINE` | Frontend (Docker) | Hero tagline passed as `VITE_STORE_TAGLINE` |
-| `VITE_STORE_NAME` | Frontend build | Baked in at `npm run build` |
-| `VITE_STORE_TAGLINE` | Frontend build | Baked in at `npm run build` |
-| `POSTGRES_DB` | Docker/DB | PostgreSQL database name |
-| `DYNAMODB_TABLE_MENU` | Backend | DynamoDB menu table (prod) |
-| `DYNAMODB_TABLE_DEALS` | Backend | DynamoDB deals table (prod) |
+| Variable | Purpose |
+|---|---|
+| `STORE_SLUG` | Selects `backend/menus/<slug>/` data directory |
+| `STORE_NAME` | API title, Square idempotency key prefix |
+| `STORE_TAGLINE` | Frontend hero tagline (`VITE_STORE_TAGLINE`) |
+| `STORE_DOMAIN` | CORS allowed origin |
+| `GRAB_URL` | "Order" button URL in navbar |
+| `POSTGRES_DB` | PostgreSQL database name |
+| `MENU_S3_BUCKET` | S3 bucket for CSVs; blank = local files only |
+| `GOOGLE_MAPS_API_KEY` | Maps Embed API; blank = legacy embed fallback |
+| `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` | DynamoDB tables (prod) |
+| `FRONTEND_PORT` / `BACKEND_PORT` / `DB_PORT` / `DB_VOLUME` | Docker port offsets for running stores simultaneously |
 
-Frontend components read store identity from `frontend/src/config/store.ts` — always import from there, never hardcode.
+Frontend reads store identity from `frontend/src/config/store.ts` — always import from there.
 
-### Terraform layout (fully isolated per store × env)
+### Per-store data files (`backend/menus/<slug>/`)
+
+```
+backend/menus/<slug>/
+├── menu.csv        — drink menu (loaded at startup)
+├── deals.csv       — public deals/promotions
+├── locations.csv   — physical store locations
+└── images/         — drink photos served at /static/images/
+```
+
+**menu.csv columns:** `item_id, name, category, description, price, image_url, is_available, tags, customizations`
+- `tags` pipe-separated: `hot|iced|popular|signature|coffee|matcha|latte|tea`
+- Signature items tagged with their base category appear in both Signature section AND that base section on the menu page
+- `item_id` blank → stable UUID derived from `(store_slug + name)`
+- `customizations`: `milk=Whole|Oat|Almond;size=12oz|16oz`
+
+**deals.csv columns:** `title, description, discount_type, discount_value, label, expires_at, badge`
+
+**locations.csv columns:** `name, address, city, state, zip, country, hours, phone`
+- Use a real Google Maps-resolvable address
+
+### Terraform layout
+
 ```
 terraform/envs/
-├── phin-and-beans/dev/   VPC: 10.0.0.0/16   state: phin-and-beans/dev/terraform.tfstate
-├── phin-and-beans/prod/  VPC: 10.1.0.0/16   state: phin-and-beans/prod/terraform.tfstate
-├── phin-drips/dev/       VPC: 10.2.0.0/16   state: phin-drips/dev/terraform.tfstate
-└── phin-drips/prod/      VPC: 10.3.0.0/16   state: phin-drips/prod/terraform.tfstate
+├── phin-and-beans/dev/   VPC: 10.0.0.0/16
+├── phin-and-beans/prod/  VPC: 10.1.0.0/16
+├── phin-drips/dev/       VPC: 10.2.0.0/16
+└── phin-drips/prod/      VPC: 10.3.0.0/16
 ```
-Each env has its own VPC, RDS, ECS service, Secrets Manager secret, S3 bucket, and CloudFront distribution. All use the same single backend ECR image — store identity is injected via env vars at ECS task startup.
 
-### Adding a new store
-1. Add entry to `stores/stores.json`
-2. Create `stores/<slug>.env`
-3. Copy `terraform/envs/phin-drips/` → `terraform/envs/<slug>/`, update locals + VPC CIDRs + state key + db_name
-4. Add store to `matrix` in both `deploy-dev` and `deploy-prod` jobs in `.github/workflows/ci-cd.yml`
-5. Add GitHub secrets using pattern `DEV_{PREFIX}_*` / `PROD_{PREFIX}_*`
-
----
-
-## Request Flow
-
-```
-Browser (React SPA)
-  → Axios (JWT injected from useAuthStore.getState().token via interceptor in api/client.ts)
-  → Vite proxy /api → http://localhost:8000  (dev only)
-  → FastAPI routers  (backend/app/routers/)
-  → Services         (backend/app/services/)
-  → SQLAlchemy ORM   (backend/app/models/)
-  → PostgreSQL
-       ↳ Stripe API  (payment_service.py)
-       ↳ Square API  (square_service.py)
-```
+Each env is fully isolated: VPC, RDS, ECS, Secrets Manager, S3, CloudFront. Shared state: S3 bucket `coffee-tea-app-tfstate` + DynamoDB lock table. Dev → `us-east-2`, Prod → `us-east-1`.
 
 ---
 
 ## Frontend Architecture
 
-See `resources/frontend.md` for full detail. Key points:
+**Pages** (`frontend/src/pages/`):
 
-- **`config/store.ts`** — single import for `STORE_NAME` + `STORE_TAGLINE`; use in any component that needs store identity
-- **`constants/orderStatus.ts`** — `ORDER_STATUSES`, `ORDER_STATUS_COLORS`, `ORDER_STATUS_LABELS`
-- **Pages** live in `frontend/src/pages/` — route-level components
-- **Stores** in `frontend/src/store/` — Zustand persisted to localStorage:
-  - `useAuthStore` — user object + JWT token; Zustand `persist` handles localStorage (no manual calls)
-  - `useCartStore` — items, customizations, applied deal code + discount
-- **API clients** in `frontend/src/api/`:
-  - `client.ts` — Axios base instance; reads token via `useAuthStore.getState().token`; 401 → calls `logout()` + redirect to `/login`
-  - `auth.ts`, `menu.ts`, `orders.ts`, `deals.ts` — domain-specific endpoints with TypeScript types
-- **Components** in `frontend/src/components/` by domain: `layout/` (Navbar + Footer), `menu/`, `cart/`, `deals/`
-- **Design system** — Starbucks-inspired: `--green-dark` (#1E3932) headers/hero, `--green` (#00704A) primary CTAs, `--gold` for loyalty, `--cream` page background, white cards. See `resources/frontend.md` for full token list.
-- **Footer** — `components/layout/Footer.tsx` — minimal single-row layout (copyright left, nav links right). Davien-style: no heavy decoration, just text links and copyright.
+| Route | Page | Notes |
+|---|---|---|
+| `/` | Home | Hero, Vietnam origin story, 4 pillars, live signature drinks grid |
+| `/menu` | Menu | Section nav (Signature, Coffee, Matcha, Latte, Tea, Hot Drinks); circular cards; click → description modal |
+| `/deals` | Deals | Fetches `/api/deals/public`; deal cards; empty state if none |
+| `/locations` | Locations | Google Maps embed + address/hours/phone from `locations.csv` |
+| `/careers` | Careers | Static — 3-step apply process, email CTA |
+| `/privacy` | PrivacyPolicy | Loads `frontend/public/privacy-policy.txt` |
+| `/login` | Login | Not linked from public nav — navigate to `/login` directly |
+| `/admin` | AdminDashboard | `is_admin` only |
+
+**Components:**
+- `layout/Navbar.tsx` — Home/Menu/Deals center nav; Locations + Order (Grab) buttons right; admin controls if `is_admin`
+- `layout/Footer.tsx` — copyright left; Careers + Privacy Policy + Instagram/Facebook/TikTok icons right
+- `menu/MenuCard.tsx` — circular image (140px), name + price; click opens Framer Motion modal with full description
+- `deals/SpinWheel.tsx` — animated spin wheel
+
+**State** (`frontend/src/store/`):
+- `useAuthStore` — user + JWT, Zustand `persist` to localStorage `"auth-storage"`
+- `useCartStore` — items + deal discount, persisted to `"cart-storage"`
+
+**API clients** (`frontend/src/api/`): `client.ts` (Axios + JWT interceptor + 401 redirect), `auth.ts`, `menu.ts`, `deals.ts`, `locations.ts`
+
+**Vite proxy** (dev only): `/api` and `/static` → `http://localhost:8000`
+
+**Design tokens** (`index.css`): `--green-dark` (#1E3932) headers, `--green` (#00704A) CTAs, `--gold` loyalty, `--cream` (#F2F0EB) page bg, `--white` cards. Never hardcode colors.
 
 ---
 
 ## Backend Architecture
 
-See `resources/backend.md` for full detail. Key points:
+**`main.py`** — FastAPI app, CORS, router registration, `StaticFiles` mount at `/static/images` → `backend/menus/<STORE_SLUG>/images/`
 
-- `backend/app/main.py` — FastAPI app, CORS (origins built from config), router registration
-- `backend/app/config.py` — All env vars via Pydantic `Settings`; import as `from app.config import settings`
-- `backend/app/constants.py` — `ORDER_STATUSES` list; used by orders router for validation
-- `backend/app/database.py` — SQLAlchemy engine + `get_db` dependency
-- **Routers** (`backend/app/routers/`) — thin handlers only; auth via `get_current_active_user` (user) / `get_admin_user` (admin) from `utils/auth.py`
-- **Services** (`backend/app/services/`) — all business logic here; `menu_service.py` is the DynamoDB implementation for production
-- **Models** (`backend/app/models/`) — SQLAlchemy ORM (the DB schema)
-- **Schemas** (`backend/app/schemas/`) — Pydantic request/response models; kept separate from ORM models
+**`config.py`** — all env vars via Pydantic `Settings`; `from app.config import settings`
 
-### Menu storage
-- `ENVIRONMENT=development` → `routers/menu.py` loads from `backend/menus/<STORE_SLUG>.csv` via `services/menu_loader.py` into an in-memory dict at startup
-- Production → wire `menu_service.py` DynamoDB functions into the router
-- CSV format: `item_id,name,category,description,price,image_url,is_available,tags,customizations`
-  - `tags` pipe-separated: `hot|iced|popular`
-  - `customizations` key=values: `milk=Whole|Oat;size=12oz|16oz`
-  - blank `item_id` → stable UUID derived from (store_slug + name), survives restarts
+**Routers** (`backend/app/routers/`) — thin handlers only:
 
----
+| Router | Prefix | Key endpoints |
+|---|---|---|
+| `auth.py` | `/api/auth` | POST `/register`, POST `/login` |
+| `menu.py` | `/api/menu` | GET `/`, GET `/categories`, admin CRUD |
+| `deals.py` | `/api/deals` | GET `/public` (no auth), POST `/spin` (user), admin CRUD |
+| `locations.py` | `/api/locations` | GET `/` (public) |
+| `orders.py` | `/api/orders` | payment-intent, create, history, status, Stripe webhook |
+| `users.py` | `/api/users` | `/me`, list, make-admin |
 
-## Data Models
+**Services** (`backend/app/services/`):
+- `menu_loader.py` — S3 → local CSV fallback; resolves image URLs to `/static/images/`
+- `deals_loader.py` — S3 → local `deals.csv` fallback; returns `[]` if missing
+- `locations_loader.py` — S3 → local `locations.csv` fallback; builds Google Maps URLs
+- `deal_service.py` — spin logic, code generation (`BREW-XXXXX`), validation, discount calc
+- `payment_service.py` — Stripe payment intent, webhook verification
+- `square_service.py` — async Square POS order push
+- `menu_service.py` — in-memory dict (dev, `ENVIRONMENT=development`) or DynamoDB (prod)
 
-See `resources/data-models.md` for full schemas. Quick reference:
+**Menu storage:** `ENVIRONMENT=development` → in-memory dict from CSV at startup. Production → DynamoDB via `menu_service.py`.
 
-| Model | Key Fields |
-|---|---|
-| `User` | email, hashed_password, is_admin, loyalty_points |
-| `Order` | status, total_amount, stripe_payment_id, square_order_id, applied_deal_code, discount_amount |
-| `OrderItem` | item_id, item_name, quantity, unit_price, customizations (JSON) |
-| `Deal` | code, deal_type, discount_type, discount_value, win_probability, max_redemptions |
-| `UserDealRedemption` | user_id, deal_id, code_used, order_id |
+**Locations Google Maps:** `maps_embed_url_keyed()` uses official Embed API (requires `GOOGLE_MAPS_API_KEY`); `maps_embed_url_legacy` property is the keyless fallback. Frontend tries keyed first, falls back via iframe `onError`.
 
-**Order status flow:** `received → brewing → ready_for_pickup → completed | cancelled`
-
-**Deal types:** `spin_to_win`, `flash_sale`, `loyalty_reward`
-**Discount types:** `percentage`, `fixed_amount`, `free_item`
+**Order status:** `received → brewing → ready_for_pickup → completed | cancelled`
 
 ---
 
 ## Authentication
 
-JWT-based, stateless.
-- Token issued at login/register, stored in Zustand `useAuthStore`, persisted to localStorage key `auth-storage` by Zustand `persist` middleware
-- Axios interceptor in `api/client.ts` reads token via `useAuthStore.getState().token` and injects `Authorization: Bearer <token>`
-- Backend: `utils/auth.py` — `get_current_active_user` + `get_admin_user` FastAPI dependencies
-- Passwords: bcrypt via `passlib`; tokens: `python-jose`
+JWT-based, stateless. Login UI is not linked from the public navbar — go to `/login` directly. First admin: register, then `UPDATE users SET is_admin = true WHERE email = '...'`.
+
+- Backend: `get_current_active_user` (any user) / `get_admin_user` (is_admin only) in `utils/auth.py`
+- Frontend: Axios interceptor injects `Authorization: Bearer <token>`; 401 → logout + redirect to `/login`
 
 ---
 
-## Key API Endpoints
+## CI/CD Pipeline
 
-See `resources/api-endpoints.md` for full list. Summary:
+**Two separate workflow files** — one per store, each triggered only by paths relevant to that store:
+- `.github/workflows/ci-cd-phin-and-beans.yml`
+- `.github/workflows/ci-cd-phin-drips.yml`
 
-- `POST /api/auth/register` — create account + get JWT
-- `POST /api/auth/login` — get JWT
-- `GET  /api/menu/` — list menu items (optional `?category=`)
-- `POST /api/orders/payment-intent` — create Stripe payment intent
-- `POST /api/orders/` — place order (creates DB record + Square POS sync)
-- `GET  /api/orders/my` — current user's order history
-- `POST /api/deals/spin` — spin the wheel, get deal code
-- `GET  /api/deals/validate/{code}` — validate deal code before checkout
-- Admin: `PATCH /api/orders/{id}/status`, `POST /api/menu/`, `GET /api/users/`
+**What triggers each workflow:**
 
----
+| Changed path | PAB workflow | PD workflow |
+|---|---|---|
+| `backend/app/**`, `frontend/src/**` (shared) | ✅ | ✅ |
+| `backend/menus/phin-and-beans/**` | ✅ | ❌ |
+| `backend/menus/phin-drips/**` | ❌ | ✅ |
+| `stores/phin-and-beans.env` | ✅ | ❌ |
+| `terraform/envs/phin-and-beans/**` | ✅ | ❌ |
 
-## Integrations
+**Pipeline stages (identical in both workflows):**
+1. `build-backend` — Docker image → ECR (shared image, git SHA tag)
+2. `build-frontend` — Vite build with store-specific `VITE_` vars → artifact
+3. `unit-test` — pytest, SQLite in-memory
+4. `deploy-dev` — Terraform apply → ECS rolling deploy → DB migrations → S3/CloudFront sync
+5. `e2e` — Playwright against live dev URL
+6. `deploy-prod` — same as deploy-dev; `main` branch + manual approval only
 
-**Stripe:**
-- `payment_service.py` — creates payment intent, verifies webhook (`/api/orders/webhook/stripe`)
-- Webhook event `payment.intent.succeeded` → update order status to `brewing`
-- Frontend: `@stripe/react-stripe-js` Stripe Elements in `pages/Checkout.tsx`
+Each workflow has its own concurrency group so they never cancel each other.
 
-**Square POS:**
-- `square_service.py` — async httpx POST to Square `/v2/orders` API on order creation
-- Idempotency key derived from `settings.STORE_NAME` + order ID
-- Stores returned `square_order_id` on the Order
+**GitHub Secrets:**
 
-**AWS DynamoDB:**
-- `menu_service.py` — production menu CRUD against DynamoDB
-- Table names come from `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` env vars (default: `phin-and-beans-*`)
+| Secret | Scope |
+|---|---|
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Shared |
+| `GOOGLE_MAPS_API_KEY` | Shared (passed as `TF_VAR_google_maps_api_key`) |
+| `DEV_PAB_*` / `PROD_PAB_*` | Phin and Beans only |
+| `DEV_PD_*` / `PROD_PD_*` | Phin Drips only |
 
----
-
-## Environment Variables
-
-All defined in `backend/.env` (copy from `backend/.env.example`):
-
-```
-STORE_NAME=Phin and Beans
-STORE_DOMAIN=phinandbeans.com
-
-DATABASE_URL=postgresql://postgres:password@localhost:5432/phin_and_beans
-SECRET_KEY=...
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-SQUARE_ACCESS_TOKEN=...
-SQUARE_LOCATION_ID=...
-AWS_REGION=us-east-1
-DYNAMODB_TABLE_MENU=phin-and-beans-menu
-DYNAMODB_TABLE_DEALS=phin-and-beans-deals
-ENVIRONMENT=development
-```
+Per-store secret pattern: `{ENV}_{PREFIX}_{VAR}` e.g. `DEV_PAB_DB_PASSWORD`, `PROD_PD_SECRET_KEY`
 
 ---
 
-## Testing
+## Adding a New Store
 
-No automated tests exist yet. This is a priority gap. When adding tests:
-- Backend: pytest + httpx `TestClient`; use a test PostgreSQL DB, not mocks
-- Frontend: Vitest + React Testing Library
-
----
-
-## Deployment Notes
-
-- **Frontend:** `npm run build` → `dist/` → S3 + CloudFront
-- **Backend:** Dockerfile → uvicorn; wrap with `mangum` for AWS Lambda + API Gateway
-- **DB:** RDS PostgreSQL; run `alembic upgrade head` on deploy
-- **CORS:** Configured dynamically from `STORE_DOMAIN` env var + localhost dev origins
+1. Add entry to `stores/stores.json` (slug, name, tagline, domain, grab_url, db names, env_prefix)
+2. Create `stores/<slug>.env` with all variables + port offsets (use next unused port set)
+3. Create `backend/menus/<slug>/menu.csv`, `deals.csv`, `locations.csv`
+4. Copy `terraform/envs/phin-drips/` → `terraform/envs/<slug>/`; update locals, VPC CIDRs, state key, db_name
+5. Create `.github/workflows/ci-cd-<slug>.yml` (copy existing, update store-specific values)
+6. Add GitHub secrets: `DEV_{PREFIX}_*`, `PROD_{PREFIX}_*`, `PROD_{PREFIX}_ACM_CERT_ARN`
+7. Test: `docker compose --env-file stores/<slug>.env -p <slug> up`

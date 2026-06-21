@@ -1,29 +1,52 @@
-name: Coffee Tea App — CI/CD
+name: Phin Drips — CI/CD
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Triggers
-# ─────────────────────────────────────────────────────────────────────────────
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'backend/app/**'
+      - 'backend/requirements*.txt'
+      - 'backend/Dockerfile'
+      - 'backend/alembic/**'
+      - 'frontend/src/**'
+      - 'frontend/public/**'
+      - 'frontend/package*.json'
+      - 'frontend/vite.config.ts'
+      - 'frontend/index.html'
+      - 'backend/menus/phin-drips/**'
+      - 'stores/phin-drips.env'
+      - 'terraform/envs/phin-drips/**'
   push:
     branches: [main, develop]
+    paths:
+      - 'backend/app/**'
+      - 'backend/requirements*.txt'
+      - 'backend/Dockerfile'
+      - 'backend/alembic/**'
+      - 'frontend/src/**'
+      - 'frontend/public/**'
+      - 'frontend/package*.json'
+      - 'frontend/vite.config.ts'
+      - 'frontend/index.html'
+      - 'backend/menus/phin-drips/**'
+      - 'stores/phin-drips.env'
+      - 'terraform/envs/phin-drips/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: phin-drips-${{ github.ref }}
   cancel-in-progress: true
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Shared constants
-# ─────────────────────────────────────────────────────────────────────────────
 env:
-  AWS_REGION_DEV:  us-east-2   # dev infrastructure
-  AWS_REGION_PROD: us-east-1   # prod infrastructure
-  # Single shared backend ECR repo — same image runs for all stores
+  AWS_REGION_DEV:  us-east-2
+  AWS_REGION_PROD: us-east-1
   ECR_REPO: ${{ vars.ECR_REPO }}
+  STORE_SLUG: phin-drips
+  STORE_NAME: "Phin Drips"
+  STORE_TAGLINE: "Bold Vietnamese drip coffee, your way."
+  GRAB_URL: "https://food.grab.com/your-phin-drips-listing"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# JOB 1 — Build & push backend image (shared across all stores)
+# JOB 1 — Build & push backend image (shared image, per-commit tag)
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
   build-backend:
@@ -49,8 +72,8 @@ jobs:
         id: meta
         run: |
           TAG=${{ github.sha }}
-          echo "image_tag=${TAG}"                        >> "$GITHUB_OUTPUT"
-          echo "image_uri=${{ env.ECR_REPO }}:${TAG}"   >> "$GITHUB_OUTPUT"
+          echo "image_tag=${TAG}"                       >> "$GITHUB_OUTPUT"
+          echo "image_uri=${{ env.ECR_REPO }}:${TAG}"  >> "$GITHUB_OUTPUT"
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -64,22 +87,11 @@ jobs:
           cache-to:   type=inline
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Build frontends (one per store; bakes VITE_ env vars)
+  # JOB 2 — Build frontend
   # ─────────────────────────────────────────────────────────────────────────
-  build-frontends:
-    name: Build frontends
+  build-frontend:
+    name: Build frontend
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        store:
-          - slug:     phin-and-beans
-            name:     "Phin and Beans"
-            tagline:  "Vietnamese-inspired coffee & tea, crafted with care."
-            grab_url: "https://food.grab.com/your-phin-and-beans-listing"
-          - slug:     phin-drips
-            name:     "Phin Drips"
-            tagline:  "Bold Vietnamese drip coffee, your way."
-            grab_url: "https://food.grab.com/your-phin-drips-listing"
     steps:
       - uses: actions/checkout@v4
 
@@ -89,22 +101,22 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package.json
 
-      - name: Build frontend — ${{ matrix.store.slug }}
+      - name: Build frontend
         working-directory: frontend
         env:
-          VITE_STORE_NAME:    ${{ matrix.store.name }}
-          VITE_STORE_TAGLINE: ${{ matrix.store.tagline }}
-          VITE_GRAB_URL:      ${{ matrix.store.grab_url }}
+          VITE_STORE_NAME:    ${{ env.STORE_NAME }}
+          VITE_STORE_TAGLINE: ${{ env.STORE_TAGLINE }}
+          VITE_GRAB_URL:      ${{ env.GRAB_URL }}
         run: |
           npm ci
           npm run build
 
-      - name: Upload frontend dist — ${{ matrix.store.slug }}
+      - name: Upload frontend dist
         uses: actions/upload-artifact@v4
         with:
-          name:            frontend-dist-${{ matrix.store.slug }}
-          path:            frontend/dist
-          retention-days:  1
+          name:           frontend-dist-phin-drips
+          path:           frontend/dist
+          retention-days: 1
 
   # ─────────────────────────────────────────────────────────────────────────
   # JOB 3 — Backend unit tests
@@ -131,59 +143,24 @@ jobs:
         env:
           STORE_NAME:   "Test Store"
           SECRET_KEY:   "test-secret-key"
-          DATABASE_URL: ""    # conftest uses SQLite in-memory
+          DATABASE_URL: ""
         run: pytest --tb=short -q
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-results
+          name: pytest-results-phin-drips
           path: backend/.pytest_cache
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 4 — Deploy dev (both stores, runs after tests pass)
+  # JOB 4 — Deploy dev
   # ─────────────────────────────────────────────────────────────────────────
   deploy-dev:
-    name: Deploy dev — ${{ matrix.store.slug }}
+    name: Deploy dev
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontends, unit-test]
+    needs: [build-backend, build-frontend, unit-test]
     environment: dev
-    strategy:
-      # Deploy stores sequentially so Terraform locks don't collide
-      max-parallel: 1
-      matrix:
-        store:
-          - slug:               phin-and-beans
-            tf_dir:             terraform/envs/phin-and-beans/dev
-            region:             us-east-2
-            private_subnet_var: DEV_PAB_PRIVATE_SUBNET_IDS
-            ecs_sg_var:         DEV_PAB_ECS_SG_ID
-            db_password_secret: DEV_PAB_DB_PASSWORD
-            secret_key_secret:  DEV_PAB_SECRET_KEY
-            stripe_secret:      DEV_PAB_STRIPE_SECRET_KEY
-            stripe_webhook:     DEV_PAB_STRIPE_WEBHOOK_SECRET
-            square_token:       DEV_PAB_SQUARE_ACCESS_TOKEN
-            square_location:    DEV_PAB_SQUARE_LOCATION_ID
-            task_def:           phin-and-beans-dev-api
-          - slug:               phin-drips
-            tf_dir:             terraform/envs/phin-drips/dev
-            region:             us-east-2
-            private_subnet_var: DEV_PD_PRIVATE_SUBNET_IDS
-            ecs_sg_var:         DEV_PD_ECS_SG_ID
-            db_password_secret: DEV_PD_DB_PASSWORD
-            secret_key_secret:  DEV_PD_SECRET_KEY
-            stripe_secret:      DEV_PD_STRIPE_SECRET_KEY
-            stripe_webhook:     DEV_PD_STRIPE_WEBHOOK_SECRET
-            square_token:       DEV_PD_SQUARE_ACCESS_TOKEN
-            square_location:    DEV_PD_SQUARE_LOCATION_ID
-            task_def:           phin-drips-dev-api
-    outputs:
-      # GitHub Actions doesn't support per-matrix outputs cleanly;
-      # E2E job reads store URLs from Terraform after this job.
-      backend_url_phin_and_beans:  ${{ steps.tf-out.outputs.backend_url }}
-      frontend_url_phin_and_beans: ${{ steps.tf-out.outputs.frontend_url }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -192,40 +169,41 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ matrix.store.region }}
+          aws-region:            ${{ env.AWS_REGION_DEV }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.8.5"
 
       - name: Terraform init
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/dev
         run: terraform init
 
       - name: Terraform apply
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/dev
         env:
           TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_db_password:           ${{ secrets[matrix.store.db_password_secret] }}
-          TF_VAR_secret_key:            ${{ secrets[matrix.store.secret_key_secret] }}
-          TF_VAR_stripe_secret_key:     ${{ secrets[matrix.store.stripe_secret] }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets[matrix.store.stripe_webhook] }}
-          TF_VAR_square_access_token:   ${{ secrets[matrix.store.square_token] }}
-          TF_VAR_square_location_id:    ${{ secrets[matrix.store.square_location] }}
+          TF_VAR_db_password:           ${{ secrets.DEV_PD_DB_PASSWORD }}
+          TF_VAR_secret_key:            ${{ secrets.DEV_PD_SECRET_KEY }}
+          TF_VAR_stripe_secret_key:     ${{ secrets.DEV_PD_STRIPE_SECRET_KEY }}
+          TF_VAR_stripe_webhook_secret: ${{ secrets.DEV_PD_STRIPE_WEBHOOK_SECRET }}
+          TF_VAR_square_access_token:   ${{ secrets.DEV_PD_SQUARE_ACCESS_TOKEN }}
+          TF_VAR_square_location_id:    ${{ secrets.DEV_PD_SQUARE_LOCATION_ID }}
+          TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: terraform apply -auto-approve
 
       - name: Get Terraform outputs
         id: tf-out
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/dev
         run: |
-          echo "backend_url=$(terraform output -raw backend_url)"        >> "$GITHUB_OUTPUT"
-          echo "frontend_url=$(terraform output -raw frontend_url)"      >> "$GITHUB_OUTPUT"
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"   >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)"   >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)"     >> "$GITHUB_OUTPUT"
-          echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "backend_url=$(terraform output -raw backend_url)"           >> "$GITHUB_OUTPUT"
+          echo "frontend_url=$(terraform output -raw frontend_url)"         >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"      >> "$GITHUB_OUTPUT"
+          echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
+          echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
+          echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
           echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
-          echo "ecs_sg=$(terraform output -raw ecs_security_group)"      >> "$GITHUB_OUTPUT"
+          echo "ecs_sg=$(terraform output -raw ecs_security_group)"         >> "$GITHUB_OUTPUT"
 
       - name: Force new ECS deployment
         run: |
@@ -233,26 +211,26 @@ jobs:
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --service ${{ steps.tf-out.outputs.ecs_service }} \
             --force-new-deployment \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_DEV }}
           aws ecs wait services-stable \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_DEV }}
 
       - name: Run DB migrations
         run: |
           aws ecs run-task \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --task-definition ${{ matrix.store.task_def }} \
+            --task-definition phin-drips-dev-api \
             --launch-type FARGATE \
             --overrides '{"containerOverrides":[{"name":"coffee-tea-api","command":["alembic","upgrade","head"]}]}' \
             --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_DEV }}
 
-      - name: Download frontend dist — ${{ matrix.store.slug }}
+      - name: Download frontend dist
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist-${{ matrix.store.slug }}
+          name: frontend-dist-phin-drips
           path: frontend/dist
 
       - name: Deploy frontend to S3 + invalidate CloudFront
@@ -269,21 +247,12 @@ jobs:
             --paths "/*"
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 5 — E2E tests (run against each store's dev deployment)
+  # JOB 5 — E2E tests
   # ─────────────────────────────────────────────────────────────────────────
   e2e:
-    name: E2E — ${{ matrix.store.slug }}
+    name: E2E tests
     runs-on: ubuntu-latest
     needs: deploy-dev
-    strategy:
-      matrix:
-        store:
-          - slug:    phin-and-beans
-            tf_dir:  terraform/envs/phin-and-beans/dev
-            region:  us-east-2
-          - slug:    phin-drips
-            tf_dir:  terraform/envs/phin-drips/dev
-            region:  us-east-2
     steps:
       - uses: actions/checkout@v4
 
@@ -292,7 +261,7 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ matrix.store.region }}
+          aws-region:            ${{ env.AWS_REGION_DEV }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -300,7 +269,7 @@ jobs:
 
       - name: Get store URLs
         id: urls
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/dev
         run: |
           terraform init -reconfigure
           echo "backend_url=$(terraform output -raw backend_url)"   >> "$GITHUB_OUTPUT"
@@ -316,57 +285,31 @@ jobs:
         working-directory: tests/e2e
         run: npm ci && npx playwright install --with-deps chromium
 
-      - name: Run E2E tests — ${{ matrix.store.slug }}
+      - name: Run E2E tests
         working-directory: tests/e2e
         env:
           E2E_FRONTEND_URL: ${{ steps.urls.outputs.frontend_url }}
           E2E_API_URL:      ${{ steps.urls.outputs.backend_url }}
-          E2E_STORE_SLUG:   ${{ matrix.store.slug }}
+          E2E_STORE_SLUG:   phin-drips
         run: npm test
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name:            playwright-report-${{ matrix.store.slug }}
+          name:            playwright-report-phin-drips
           path:            tests/e2e/playwright-report
           retention-days:  7
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 6 — Deploy prod (both stores, push to main only, manual gate)
+  # JOB 6 — Deploy prod (push to main only, manual approval gate)
   # ─────────────────────────────────────────────────────────────────────────
   deploy-prod:
-    name: Deploy prod — ${{ matrix.store.slug }}
+    name: Deploy prod
     runs-on: ubuntu-latest
     needs: e2e
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: prod
-    strategy:
-      max-parallel: 1
-      matrix:
-        store:
-          - slug:               phin-and-beans
-            tf_dir:             terraform/envs/phin-and-beans/prod
-            region:             us-east-1
-            db_password_secret: PROD_PAB_DB_PASSWORD
-            secret_key_secret:  PROD_PAB_SECRET_KEY
-            stripe_secret:      PROD_PAB_STRIPE_SECRET_KEY
-            stripe_webhook:     PROD_PAB_STRIPE_WEBHOOK_SECRET
-            square_token:       PROD_PAB_SQUARE_ACCESS_TOKEN
-            square_location:    PROD_PAB_SQUARE_LOCATION_ID
-            task_def:           phin-and-beans-prod-api
-            acm_cert_secret:    PROD_PAB_ACM_CERT_ARN
-          - slug:               phin-drips
-            tf_dir:             terraform/envs/phin-drips/prod
-            region:             us-east-1
-            db_password_secret: PROD_PD_DB_PASSWORD
-            secret_key_secret:  PROD_PD_SECRET_KEY
-            stripe_secret:      PROD_PD_STRIPE_SECRET_KEY
-            stripe_webhook:     PROD_PD_STRIPE_WEBHOOK_SECRET
-            square_token:       PROD_PD_SQUARE_ACCESS_TOKEN
-            square_location:    PROD_PD_SQUARE_LOCATION_ID
-            task_def:           phin-drips-prod-api
-            acm_cert_secret:    PROD_PD_ACM_CERT_ARN
     steps:
       - uses: actions/checkout@v4
 
@@ -375,39 +318,40 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ matrix.store.region }}
+          aws-region:            ${{ env.AWS_REGION_PROD }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.8.5"
 
       - name: Terraform init
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/prod
         run: terraform init
 
       - name: Terraform apply
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/prod
         env:
           TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_db_password:           ${{ secrets[matrix.store.db_password_secret] }}
-          TF_VAR_secret_key:            ${{ secrets[matrix.store.secret_key_secret] }}
-          TF_VAR_stripe_secret_key:     ${{ secrets[matrix.store.stripe_secret] }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets[matrix.store.stripe_webhook] }}
-          TF_VAR_square_access_token:   ${{ secrets[matrix.store.square_token] }}
-          TF_VAR_square_location_id:    ${{ secrets[matrix.store.square_location] }}
-          TF_VAR_acm_certificate_arn:   ${{ secrets[matrix.store.acm_cert_secret] }}
+          TF_VAR_db_password:           ${{ secrets.PROD_PD_DB_PASSWORD }}
+          TF_VAR_secret_key:            ${{ secrets.PROD_PD_SECRET_KEY }}
+          TF_VAR_stripe_secret_key:     ${{ secrets.PROD_PD_STRIPE_SECRET_KEY }}
+          TF_VAR_stripe_webhook_secret: ${{ secrets.PROD_PD_STRIPE_WEBHOOK_SECRET }}
+          TF_VAR_square_access_token:   ${{ secrets.PROD_PD_SQUARE_ACCESS_TOKEN }}
+          TF_VAR_square_location_id:    ${{ secrets.PROD_PD_SQUARE_LOCATION_ID }}
+          TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_acm_certificate_arn:   ${{ secrets.PROD_PD_ACM_CERT_ARN }}
         run: terraform apply -auto-approve
 
       - name: Get Terraform outputs
         id: tf-out
-        working-directory: ${{ matrix.store.tf_dir }}
+        working-directory: terraform/envs/phin-drips/prod
         run: |
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"   >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)"   >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)"     >> "$GITHUB_OUTPUT"
-          echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"      >> "$GITHUB_OUTPUT"
+          echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
+          echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
+          echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
           echo "private_subnets=$(terraform output -raw private_subnet_ids)" >> "$GITHUB_OUTPUT"
-          echo "ecs_sg=$(terraform output -raw ecs_security_group)"      >> "$GITHUB_OUTPUT"
+          echo "ecs_sg=$(terraform output -raw ecs_security_group)"         >> "$GITHUB_OUTPUT"
 
       - name: Force new ECS deployment
         run: |
@@ -415,26 +359,26 @@ jobs:
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --service ${{ steps.tf-out.outputs.ecs_service }} \
             --force-new-deployment \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_PROD }}
           aws ecs wait services-stable \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
             --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_PROD }}
 
       - name: Run DB migrations
         run: |
           aws ecs run-task \
             --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --task-definition ${{ matrix.store.task_def }} \
+            --task-definition phin-drips-prod-api \
             --launch-type FARGATE \
             --overrides '{"containerOverrides":[{"name":"coffee-tea-api","command":["alembic","upgrade","head"]}]}' \
             --network-configuration "awsvpcConfiguration={subnets=[${{ steps.tf-out.outputs.private_subnets }}],securityGroups=[${{ steps.tf-out.outputs.ecs_sg }}],assignPublicIp=DISABLED}" \
-            --region ${{ matrix.store.region }}
+            --region ${{ env.AWS_REGION_PROD }}
 
-      - name: Download frontend dist — ${{ matrix.store.slug }}
+      - name: Download frontend dist
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist-${{ matrix.store.slug }}
+          name: frontend-dist-phin-drips
           path: frontend/dist
 
       - name: Deploy frontend to S3 + invalidate CloudFront
