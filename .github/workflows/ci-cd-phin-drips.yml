@@ -7,7 +7,6 @@ on:
       - 'backend/app/**'
       - 'backend/requirements*.txt'
       - 'backend/Dockerfile'
-      - 'backend/alembic/**'
       - 'frontend/src/**'
       - 'frontend/public/**'
       - 'frontend/package*.json'
@@ -23,7 +22,6 @@ on:
       - 'backend/app/**'
       - 'backend/requirements*.txt'
       - 'backend/Dockerfile'
-      - 'backend/alembic/**'
       - 'frontend/src/**'
       - 'frontend/public/**'
       - 'frontend/package*.json'
@@ -146,7 +144,6 @@ jobs:
         env:
           STORE_NAME:   "Test Store"
           SECRET_KEY:   "test-secret-key"
-          DATABASE_URL: ""
         run: pytest --tb=short -q
 
       - name: Upload test results

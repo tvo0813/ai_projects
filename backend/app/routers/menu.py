@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from ..schemas.menu import MenuItem, MenuItemCreate, MenuItemUpdate
 from ..utils.auth import get_admin_user
-from ..models.user import User
 from ..config import settings
 from ..services.menu_loader import load_menu_from_csv
 
@@ -39,7 +38,7 @@ def get_item(item_id: str):
 
 
 @router.post("/", response_model=MenuItem)
-def create_item(data: MenuItemCreate, admin: User = Depends(get_admin_user)):
+def create_item(data: MenuItemCreate, _: None = Depends(get_admin_user)):
     item_id = data.item_id or str(uuid4())
     item = MenuItem(
         item_id=item_id,
@@ -57,7 +56,7 @@ def create_item(data: MenuItemCreate, admin: User = Depends(get_admin_user)):
 
 
 @router.put("/{item_id}", response_model=MenuItem)
-def update_item(item_id: str, data: MenuItemUpdate, admin: User = Depends(get_admin_user)):
+def update_item(item_id: str, data: MenuItemUpdate, _: None = Depends(get_admin_user)):
     item = _menu_db.get(item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -67,7 +66,7 @@ def update_item(item_id: str, data: MenuItemUpdate, admin: User = Depends(get_ad
 
 
 @router.delete("/{item_id}")
-def delete_item(item_id: str, admin: User = Depends(get_admin_user)):
+def delete_item(item_id: str, _: None = Depends(get_admin_user)):
     if item_id not in _menu_db:
         raise HTTPException(status_code=404, detail="Item not found")
     del _menu_db[item_id]

@@ -30,32 +30,15 @@ services:
     entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-llama3.2:1b}"]
     restart: "no"
 
-  coffee-tea-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB:       ${POSTGRES_DB:-phin_and_beans}
-      POSTGRES_USER:     postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - ${DB_VOLUME:-coffee_tea_postgres}:/var/lib/postgresql/data
-    healthcheck:
-      test:     ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout:  5s
-      retries:  5
-
   coffee-tea-api:
     build: ./backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
-      STORE_NAME:           ${STORE_NAME:-Phin and Beans}
-      STORE_SLUG:           ${STORE_SLUG:-phin-and-beans}
-      STORE_DOMAIN:         ${STORE_DOMAIN:-}
-      DATABASE_URL:         postgresql://postgres:password@coffee-tea-db:5432/${POSTGRES_DB:-phin_and_beans}
-      SECRET_KEY:           ${SECRET_KEY:-change-this-in-production}
+      STORE_NAME:            ${STORE_NAME:-Phin and Beans}
+      STORE_SLUG:            ${STORE_SLUG:-phin-and-beans}
+      STORE_DOMAIN:          ${STORE_DOMAIN:-}
+      SECRET_KEY:            ${SECRET_KEY:-change-this-in-production}
       STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       SQUARE_ACCESS_TOKEN:   ${SQUARE_ACCESS_TOKEN:-}
@@ -68,10 +51,11 @@ services:
       OLLAMA_MODEL:          ${OLLAMA_MODEL:-llama3.2:1b}
       ENVIRONMENT:           development
     depends_on:
-      coffee-tea-db:
+      ollama:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ./backend/app:/app/app
+      - ./backend/menus:/app/menus
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   coffee-tea-web:
@@ -95,7 +79,4 @@ services:
     command: npm run dev -- --host 0.0.0.0
 
 volumes:
-  coffee_tea_postgres_phin_and_beans:
-  coffee_tea_postgres_phin_drips:
-  coffee_tea_postgres_daboba:
   ollama_models:

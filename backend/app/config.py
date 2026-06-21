@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     STORE_SLUG: str = "phin-and-beans"  # matches the filename in backend/menus/<slug>.csv
     STORE_DOMAIN: str = ""  # prod domain e.g. "phinandbeans.com"; blank = no extra CORS origin
 
-    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/store"
+    DATABASE_URL: str = ""
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     STRIPE_SECRET_KEY: str = ""
