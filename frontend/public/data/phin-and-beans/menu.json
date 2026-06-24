@@ -1,0 +1,587 @@
+[
+  {
+    "item_id": "phin-and-beans-marble-drip",
+    "name": "Marble Drip",
+    "category": "signature",
+    "description": "Lighter Vietnamese phin coffee with sweet condensed milk — smooth and easy going.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "popular",
+      "iced",
+      "fan-favorite",
+      "coffee"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-egg-cream-coffee",
+    "name": "Egg Cream Coffee",
+    "category": "signature",
+    "description": "Egg cream and cocoa powder topped over bold Vietnamese iced coffee.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "signature",
+      "coffee"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-ube-cream-coffee",
+    "name": "Ube Cream Coffee",
+    "category": "signature",
+    "description": "Coconut ube purple yam cream over bold Vietnamese iced coffee.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "signature",
+      "coffee"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-matcha-cream-coffee",
+    "name": "Matcha Cream Coffee",
+    "category": "signature",
+    "description": "Matcha cold cream topped with cocoa powder over bold Vietnamese iced coffee.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "signature",
+      "matcha"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-einspanner-cream-coffee",
+    "name": "Einspanner Cream Coffee",
+    "category": "signature",
+    "description": "Einspanner cream and cocoa powder topped over bold Vietnamese iced coffee.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "signature",
+      "coffee"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-coconut-blended-coffee",
+    "name": "Coconut Blended Coffee",
+    "category": "signature",
+    "description": "Ice-blended Vietnamese coffee with coconut milk and toasted coconut flakes.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "blended",
+      "signature",
+      "coffee"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-vietnamese-coffee",
+    "name": "Vietnamese Coffee",
+    "category": "coffee",
+    "description": "Traditional iced Vietnamese phin drip coffee with condensed milk.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "classic"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-cafe-latte",
+    "name": "Cafe Latte",
+    "category": "coffee",
+    "description": "Bold phin drip espresso shot blended with your choice of milk.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "classic"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat",
+        "Almond",
+        "Coconut"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-cold-brew",
+    "name": "Cold Brew",
+    "category": "coffee",
+    "description": "Slow-steeped pitch black cold brew — strong and smooth.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "strong",
+      "new"
+    ],
+    "config_json": {
+      "sweetness": [
+        "None",
+        "Less Sweet",
+        "Regular"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-sweet-cream-cold-brew",
+    "name": "Sweet Cream Cold Brew",
+    "category": "coffee",
+    "description": "Slow-steeped cold brew topped with our house sweet cream.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "popular",
+      "new"
+    ],
+    "config_json": {
+      "sweetness": [
+        "None",
+        "Less Sweet",
+        "Regular"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-matcha-latte",
+    "name": "Matcha Latte",
+    "category": "matcha",
+    "description": "Ceremonial-grade matcha whisked with steamed milk — hot or iced.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "hot",
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat",
+        "Almond",
+        "Coconut"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-iced-matcha",
+    "name": "Iced Matcha",
+    "category": "matcha",
+    "description": "Shaken ceremonial matcha over ice with your choice of milk.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat",
+        "Almond",
+        "Coconut"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-matcha-cream-latte",
+    "name": "Matcha Cream Latte",
+    "category": "matcha",
+    "description": "Matcha cold cream floated over house sweet milk with a phin drip shot.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "signature",
+      "matcha"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-einspanner-latte",
+    "name": "Einspanner Latte",
+    "category": "latte",
+    "description": "Einspanner cream and cocoa powder over house sweet milk with a bold phin shot.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-banana-latte",
+    "name": "Banana Latte",
+    "category": "latte",
+    "description": "Banana cream with cinnamon powder over house sweet milk and a bold phin shot.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "sweet"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-ube-latte",
+    "name": "Ube Latte",
+    "category": "latte",
+    "description": "Ube cream over phin drip coffee with fresh milk and simple syrup.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "sweet"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-sesame-latte",
+    "name": "Sesame Latte",
+    "category": "latte",
+    "description": "Black sesame cream over phin drip coffee with fresh milk and simple syrup.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "nutty"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-strawberry-cream-oat-latte",
+    "name": "Strawberry Cream Oat Latte",
+    "category": "latte",
+    "description": "Strawberry cream over oat milk and a phin drip shot — light and fruity.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "fruity"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-jasmine-milk-tea",
+    "name": "Jasmine Milk Tea",
+    "category": "tea",
+    "description": "Fragrant jasmine green tea with house milk.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "floral"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "pearls": [
+        "Yes",
+        "No"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-taro-milk-tea",
+    "name": "Taro Milk Tea",
+    "category": "tea",
+    "description": "Creamy taro with house milk — sweet earthy and smooth.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "sweet",
+      "popular"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "pearls": [
+        "Yes",
+        "No"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-thai-tea",
+    "name": "Thai Tea",
+    "category": "tea",
+    "description": "Spiced orange Thai tea with condensed milk.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "spiced",
+      "classic"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-peach-green-tea",
+    "name": "Peach Green Tea",
+    "category": "tea",
+    "description": "Light green tea with fresh peach syrup and a hint of citrus.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "fruity",
+      "refreshing"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-hot-vietnamese-coffee",
+    "name": "Hot Vietnamese Coffee",
+    "category": "hot",
+    "description": "Classic phin drip Vietnamese coffee served hot with condensed milk.",
+    "price": 4.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "hot",
+      "classic"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-hot-latte",
+    "name": "Hot Latte",
+    "category": "hot",
+    "description": "Bold phin drip shot with steamed milk of your choice.",
+    "price": 5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "hot",
+      "classic"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat",
+        "Almond"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-hot-matcha",
+    "name": "Hot Matcha",
+    "category": "hot",
+    "description": "Ceremonial-grade matcha whisked with steamed milk.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "hot",
+      "popular"
+    ],
+    "config_json": {
+      "milk": [
+        "Whole",
+        "Oat",
+        "Almond"
+      ],
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ]
+    }
+  },
+  {
+    "item_id": "phin-and-beans-hot-americano",
+    "name": "Hot Americano",
+    "category": "hot",
+    "description": "Double phin drip shots topped with hot water — clean and bold.",
+    "price": 4,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "hot",
+      "strong"
+    ],
+    "config_json": null
+  }
+]

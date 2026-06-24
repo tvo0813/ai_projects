@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Phin Drips",
+    "address": "456 Coffee Lane",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zip": "90001",
+    "country": "US",
+    "hours": "Mon–Fri 7am–6pm · Sat–Sun 8am–5pm",
+    "phone": "+1 (213) 555-0200",
+    "full_address": "456 Coffee Lane, Los Angeles, CA, 90001, US",
+    "maps_embed_url_keyed": "https://www.google.com/maps/embed/v1/place?key=&q=456%20Coffee%20Lane%2C%20Los%20Angeles%2C%20CA%2C%2090001%2C%20US",
+    "maps_embed_url_legacy": "https://maps.google.com/maps?q=456%20Coffee%20Lane%2C%20Los%20Angeles%2C%20CA%2C%2090001%2C%20US&output=embed",
+    "maps_link_url": "https://www.google.com/maps/search/?api=1&query=456%20Coffee%20Lane%2C%20Los%20Angeles%2C%20CA%2C%2090001%2C%20US"
+  }
+]

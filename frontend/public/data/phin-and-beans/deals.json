@@ -1,0 +1,47 @@
+[
+  {
+    "title": "Happy Hour",
+    "description": "Every day 2–5 PM — all iced drinks at a special price.",
+    "discount_type": "percentage",
+    "discount_value": 15,
+    "label": "15% off",
+    "expires_at": "2026-12-31",
+    "badge": "Daily"
+  },
+  {
+    "title": "Double Points Tuesday",
+    "description": "Earn 2× loyalty points on every purchase every Tuesday.",
+    "discount_type": "fixed_amount",
+    "discount_value": 0,
+    "label": "2× points",
+    "expires_at": "2026-12-31",
+    "badge": "Weekly"
+  },
+  {
+    "title": "Student Discount",
+    "description": "Show your student ID and save on any drink all day.",
+    "discount_type": "percentage",
+    "discount_value": 10,
+    "label": "10% off",
+    "expires_at": null,
+    "badge": "Ongoing"
+  },
+  {
+    "title": "Free Drink on Your Birthday",
+    "description": "Your birthday treat — one free drink of your choice on us.",
+    "discount_type": "free_item",
+    "discount_value": 0,
+    "label": "Free drink",
+    "expires_at": null,
+    "badge": "Birthday"
+  },
+  {
+    "title": "Buy 5 Get 1 Free",
+    "description": "Collect 5 stamps on your loyalty card and your 6th drink is free.",
+    "discount_type": "free_item",
+    "discount_value": 0,
+    "label": "Free 6th drink",
+    "expires_at": null,
+    "badge": "Loyalty"
+  }
+]

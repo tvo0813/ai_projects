@@ -1,0 +1,416 @@
+[
+  {
+    "item_id": "daboba-classic-milk-tea",
+    "name": "Classic Milk Tea",
+    "category": "signature",
+    "description": "Smooth black tea with creamy milk and chewy tapioca pearls.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "popular",
+      "signature",
+      "tea",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba",
+        "Lychee Jelly"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-brown-sugar-boba",
+    "name": "Brown Sugar Boba",
+    "category": "signature",
+    "description": "Rich brown sugar syrup swirled into fresh milk with tiger-stripe pearls.",
+    "price": 6.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "popular",
+      "signature",
+      "tea",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-taro-milk-tea",
+    "name": "Taro Milk Tea",
+    "category": "signature",
+    "description": "Creamy taro blended with milk tea and tapioca pearls.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "popular",
+      "signature",
+      "tea",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Taro Jelly",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-matcha-latte-boba",
+    "name": "Matcha Latte Boba",
+    "category": "matcha",
+    "description": "Ceremonial grade matcha with fresh milk and chewy tapioca pearls.",
+    "price": 6.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "matcha",
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Lychee Jelly",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-matcha-coconut",
+    "name": "Matcha Coconut",
+    "category": "matcha",
+    "description": "Earthy matcha paired with coconut milk and coconut jelly.",
+    "price": 6.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "matcha",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Coconut Jelly",
+        "Tapioca Pearls"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-strawberry-fruit-tea",
+    "name": "Strawberry Fruit Tea",
+    "category": "fruit tea",
+    "description": "Fresh strawberry tea with real fruit pieces and popping boba.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced",
+      "fruit"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Popping Boba",
+        "Lychee Jelly",
+        "Tapioca Pearls"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-passion-fruit-green-tea",
+    "name": "Passion Fruit Green Tea",
+    "category": "fruit tea",
+    "description": "Tropical passion fruit blended with light green tea.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced",
+      "fruit"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Popping Boba",
+        "Lychee Jelly"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-lychee-rose-tea",
+    "name": "Lychee Rose Tea",
+    "category": "fruit tea",
+    "description": "Delicate lychee and rose flavors over refreshing black tea.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced",
+      "fruit"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Lychee Jelly",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-thai-tea-boba",
+    "name": "Thai Tea Boba",
+    "category": "tea",
+    "description": "Classic Thai iced tea with condensed milk and tapioca pearls.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-jasmine-milk-tea",
+    "name": "Jasmine Milk Tea",
+    "category": "tea",
+    "description": "Fragrant jasmine green tea with fresh milk and pearls.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Lychee Jelly"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-oolong-milk-tea",
+    "name": "Oolong Milk Tea",
+    "category": "tea",
+    "description": "Roasted oolong with creamy milk — light and smooth.",
+    "price": 5.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "tea",
+      "iced"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-mango-smoothie",
+    "name": "Mango Smoothie",
+    "category": "smoothie",
+    "description": "Fresh mango blended into a thick creamy smoothie.",
+    "price": 6,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "fruit",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba",
+        "Lychee Jelly"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-avocado-smoothie",
+    "name": "Avocado Smoothie",
+    "category": "smoothie",
+    "description": "Rich and creamy avocado smoothie with condensed milk.",
+    "price": 6.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Coconut Jelly"
+      ]
+    }
+  },
+  {
+    "item_id": "daboba-strawberry-matcha",
+    "name": "Strawberry Matcha",
+    "category": "matcha",
+    "description": "Layers of fresh strawberry and earthy matcha over milk.",
+    "price": 6.5,
+    "image_url": null,
+    "is_available": true,
+    "tags": [
+      "matcha",
+      "iced",
+      "popular"
+    ],
+    "config_json": {
+      "sweetness": [
+        "Less Sweet",
+        "Regular",
+        "Extra Sweet"
+      ],
+      "ice": [
+        "Less Ice",
+        "Regular",
+        "Extra Ice"
+      ],
+      "toppings": [
+        "Tapioca Pearls",
+        "Popping Boba"
+      ]
+    }
+  }
+]

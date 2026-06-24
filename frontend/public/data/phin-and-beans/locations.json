@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Phin and Beans",
+    "address": "5000 Long Beach Blvd",
+    "city": "Long Beach",
+    "state": "CA",
+    "zip": "90805",
+    "country": "US",
+    "hours": "Mon–Fri 7am–6pm · Sat–Sun 8am–5pm",
+    "phone": "+1(111)111-1111",
+    "full_address": "5000 Long Beach Blvd, Long Beach, CA, 90805, US",
+    "maps_embed_url_keyed": "https://www.google.com/maps/embed/v1/place?key=&q=5000%20Long%20Beach%20Blvd%2C%20Long%20Beach%2C%20CA%2C%2090805%2C%20US",
+    "maps_embed_url_legacy": "https://maps.google.com/maps?q=5000%20Long%20Beach%20Blvd%2C%20Long%20Beach%2C%20CA%2C%2090805%2C%20US&output=embed",
+    "maps_link_url": "https://www.google.com/maps/search/?api=1&query=5000%20Long%20Beach%20Blvd%2C%20Long%20Beach%2C%20CA%2C%2090805%2C%20US"
+  }
+]

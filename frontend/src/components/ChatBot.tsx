@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { sendChatMessage, type ChatMessage } from '../api/chat'
 import { STORE_NAME } from '../config/store'
 
+// ── Static mode: show an offline card instead of the live chatbot ──
+const STATIC = import.meta.env.VITE_STATIC_MODE === 'true'
+
 const SUGGESTIONS = [
   'What are your most popular drinks?',
   'Do you have anything dairy-free?',
@@ -10,7 +13,59 @@ const SUGGESTIONS = [
   'Tell me about your matcha options.',
 ]
 
+function ChatBotOffline() {
+  return (
+    <section style={{ padding: '5rem 1.5rem' }}>
+      <div className="container" style={{ maxWidth: 720 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="glass-card"
+          style={{ padding: '3rem 2rem', textAlign: 'center' }}
+        >
+          <div style={{ fontSize: '2.8rem', marginBottom: '1.25rem' }}>☕</div>
+          <p className="section-label" style={{ color: 'var(--amber)', marginBottom: '0.75rem' }}>
+            Ask anything
+          </p>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', color: 'var(--cream-warm)', marginBottom: '1rem', fontWeight: 700 }}>
+            Menu Assistant
+          </h2>
+          <p style={{ fontSize: '0.95rem', color: 'rgba(245,237,214,0.55)', lineHeight: 1.7, maxWidth: 420, margin: '0 auto 1.75rem', fontWeight: 300 }}>
+            Our AI menu assistant runs locally in-store via Ollama.
+            Visit us or order online to chat with it in real time.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="/menu" style={{
+              padding: '0.7rem 1.75rem',
+              background: 'linear-gradient(135deg, var(--amber), var(--amber-dark))',
+              color: 'var(--espresso)', borderRadius: 'var(--radius-full)',
+              fontSize: '0.875rem', fontWeight: 700,
+              letterSpacing: '0.04em', textDecoration: 'none',
+            }}>
+              Browse Menu
+            </a>
+            <a href="/locations" style={{
+              padding: '0.7rem 1.75rem',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'var(--cream-warm)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.875rem', fontWeight: 600,
+              letterSpacing: '0.04em', textDecoration: 'none',
+            }}>
+              Find a Location
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 export default function ChatBot() {
+  if (STATIC) return <ChatBotOffline />
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)

@@ -1,4 +1,5 @@
 import api from './client'
+import { staticLocations } from './staticClient'
 
 export interface Location {
   name: string
@@ -15,5 +16,10 @@ export interface Location {
   maps_link_url: string
 }
 
-export const getLocations = () =>
-  api.get<Location[]>('/locations/').then((r) => r.data)
+// ── Toggle: set VITE_STATIC_MODE=true to bypass the backend (GitHub Pages) ──
+const STATIC = import.meta.env.VITE_STATIC_MODE === 'true'
+
+export const getLocations = (): Promise<Location[]> => {
+  if (STATIC) return staticLocations<Location[]>()
+  return api.get<Location[]>('/locations/').then(r => r.data)
+}

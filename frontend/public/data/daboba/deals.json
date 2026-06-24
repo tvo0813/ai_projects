@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Boba Happy Hour",
+    "description": "Every day 2–5 PM — all drinks discounted.",
+    "discount_type": "percentage",
+    "discount_value": 15,
+    "label": "15% off",
+    "expires_at": "2026-12-31",
+    "badge": "Daily"
+  },
+  {
+    "title": "Buy 2 Get 1 Free",
+    "description": "Order any 2 drinks and get a third of equal or lesser value free.",
+    "discount_type": "fixed_amount",
+    "discount_value": 0,
+    "label": "B2G1",
+    "expires_at": "2026-12-31",
+    "badge": "Limited"
+  },
+  {
+    "title": "Double Points Tuesday",
+    "description": "Earn 2× loyalty points on every purchase every Tuesday.",
+    "discount_type": "fixed_amount",
+    "discount_value": 0,
+    "label": "2× points",
+    "expires_at": "2026-12-31",
+    "badge": "Weekly"
+  }
+]

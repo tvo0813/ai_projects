@@ -36,8 +36,10 @@ export default function Navbar() {
       `}</style>
 
       <nav style={{
-        background: 'var(--white)',
-        borderBottom: '1px solid var(--border)',
+        background: 'rgba(20,12,8,0.82)',
+        borderBottom: '1px solid rgba(200,169,110,0.12)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         padding: '0 1.25rem',
         height: 64,
         display: 'flex',
@@ -52,14 +54,14 @@ export default function Navbar() {
         <Link to="/" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', flexShrink: 0 }}>
           <div style={{
             width: 34, height: 34, borderRadius: '50%',
-            background: 'var(--green-dark)',
+            background: 'linear-gradient(135deg, var(--amber, #C8A96E), var(--amber-dark, #9E7A3F))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1rem', flexShrink: 0,
           }}>☕</div>
           <span style={{
             fontFamily: "'Playfair Display', serif",
             fontSize: '1.05rem', fontWeight: 700,
-            color: 'var(--green-dark)', whiteSpace: 'nowrap',
+            color: 'var(--cream-warm, #F5EDD6)', whiteSpace: 'nowrap',
           }}>
             {STORE_NAME}
           </span>
@@ -70,9 +72,9 @@ export default function Navbar() {
           {navLinks.map(({ to, label }) => (
             <Link key={to} to={to} style={{
               fontSize: '0.875rem', fontWeight: 600,
-              color: isActive(to) ? 'var(--green)' : 'var(--text-primary)',
+              color: isActive(to) ? 'var(--amber, #C8A96E)' : 'rgba(245,237,214,0.65)',
               padding: '0.25rem 0',
-              borderBottom: isActive(to) ? '2px solid var(--green)' : '2px solid transparent',
+              borderBottom: isActive(to) ? '2px solid var(--amber, #C8A96E)' : '2px solid transparent',
               transition: 'color 0.15s', whiteSpace: 'nowrap',
             }}>
               {label}
@@ -84,8 +86,15 @@ export default function Navbar() {
         <div className="nav-desktop-right">
           {GRAB_URL && (
             <a href={GRAB_URL} target="_blank" rel="noopener noreferrer"
-              className="btn btn-primary"
-              style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              style={{
+                padding: '0.5rem 1.25rem',
+                background: 'linear-gradient(135deg, var(--amber, #C8A96E), var(--amber-dark, #9E7A3F))',
+                color: 'var(--espresso, #140C08)',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.85rem', fontWeight: 700,
+                whiteSpace: 'nowrap', textDecoration: 'none',
+                letterSpacing: '0.04em',
+              }}>
               Order
             </a>
           )}
@@ -95,8 +104,15 @@ export default function Navbar() {
         <div className="nav-mobile-right">
           {GRAB_URL && (
             <a href={GRAB_URL} target="_blank" rel="noopener noreferrer"
-              className="btn btn-primary"
-              style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              style={{
+                padding: '0.45rem 0.9rem',
+                background: 'linear-gradient(135deg, var(--amber, #C8A96E), var(--amber-dark, #9E7A3F))',
+                color: 'var(--espresso, #140C08)',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.82rem', fontWeight: 700,
+                whiteSpace: 'nowrap', textDecoration: 'none',
+                letterSpacing: '0.04em',
+              }}>
               Order
             </a>
           )}
@@ -104,9 +120,9 @@ export default function Navbar() {
             background: 'none', border: 'none', cursor: 'pointer',
             padding: '0.4rem', display: 'flex', flexDirection: 'column', gap: '5px', flexShrink: 0,
           }}>
-            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--green-dark)', borderRadius: 2, transition: 'transform 0.2s', transform: menuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none' }} />
-            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--green-dark)', borderRadius: 2, transition: 'opacity 0.2s', opacity: menuOpen ? 0 : 1 }} />
-            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--green-dark)', borderRadius: 2, transition: 'transform 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }} />
+            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--amber, #C8A96E)', borderRadius: 2, transition: 'transform 0.2s', transform: menuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none' }} />
+            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--amber, #C8A96E)', borderRadius: 2, transition: 'opacity 0.2s', opacity: menuOpen ? 0 : 1 }} />
+            <span style={{ display: 'block', width: 22, height: 2, background: 'var(--amber, #C8A96E)', borderRadius: 2, transition: 'transform 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }} />
           </button>
         </div>
       </nav>
@@ -114,18 +130,21 @@ export default function Navbar() {
       {/* Mobile dropdown */}
       <div className={`nav-mobile-drawer${menuOpen ? ' open' : ''}`} style={{
         position: 'fixed', top: 64, left: 0, right: 0,
-        background: 'var(--white)', borderBottom: '1px solid var(--border)',
+        background: 'rgba(20,12,8,0.96)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(200,169,110,0.12)',
         zIndex: 99, padding: '0.75rem 1.25rem 1.25rem',
         flexDirection: 'column', gap: 0,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
       }}>
         {navLinks.map(({ to, label }) => (
           <Link key={to} to={to} onClick={closeMenu} style={{
             fontSize: '1rem',
             fontWeight: isActive(to) ? 700 : 500,
-            color: isActive(to) ? 'var(--green)' : 'var(--text-primary)',
+            color: isActive(to) ? 'var(--amber, #C8A96E)' : 'rgba(245,237,214,0.7)',
             padding: '0.85rem 0',
-            borderBottom: '1px solid var(--border)',
+            borderBottom: '1px solid rgba(200,169,110,0.08)',
             textDecoration: 'none',
           }}>
             {label}

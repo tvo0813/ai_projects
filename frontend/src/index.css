@@ -35,6 +35,18 @@
   --radius-lg:   16px;
   --radius-xl:   24px;
   --radius-full: 9999px;
+
+  /* ── Dark Luxury Espresso ────────────────── */
+  --espresso:       #140C08;
+  --espresso-mid:   #1E1009;
+  --espresso-light: #3A1E0F;
+  --amber:          #C8A96E;
+  --amber-light:    #E8D5A3;
+  --amber-dark:     #9E7A3F;
+  --cream-warm:     #F5EDD6;
+  --glass-bg:       rgba(255,255,255,0.04);
+  --glass-border:   rgba(255,255,255,0.09);
+  --glass-shadow:   0 8px 32px rgba(0,0,0,0.5);
 }
 
 body {
@@ -181,6 +193,128 @@ input:focus, textarea:focus, select:focus {
   border-top-color: var(--green);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+}
+
+/* ── Dark Luxury Espresso — Hero animations ── */
+@keyframes blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(60px, -40px) scale(1.08); }
+  66%       { transform: translate(-30px, 50px) scale(0.95); }
+}
+@keyframes blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-50px, 60px) scale(1.05); }
+  66%       { transform: translate(40px, -30px) scale(1.1); }
+}
+@keyframes blob-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(30px, -60px) scale(1.06); }
+}
+@keyframes grain-shift {
+  0%, 100% { transform: translate(0, 0); }
+  20%       { transform: translate(-2%, -3%); }
+  40%       { transform: translate(1%, -1%); }
+  60%       { transform: translate(-1%, 2%); }
+  80%       { transform: translate(2%, 1%); }
+}
+
+.luxury-hero {
+  position: relative;
+  background: var(--espresso);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.luxury-hero::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  animation: grain-shift 8s steps(1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.luxury-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+.luxury-blob-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(200,169,110,0.22) 0%, transparent 70%);
+  top: -100px; left: -100px;
+  animation: blob-drift-1 18s ease-in-out infinite;
+}
+.luxury-blob-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(58,30,15,0.8) 0%, rgba(200,100,40,0.12) 60%, transparent 100%);
+  bottom: -80px; right: 5%;
+  animation: blob-drift-2 22s ease-in-out infinite;
+}
+.luxury-blob-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(158,122,63,0.15) 0%, transparent 70%);
+  top: 30%; left: 50%;
+  animation: blob-drift-3 15s ease-in-out infinite;
+}
+
+.luxury-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Glassmorphism card ────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.glass-card:hover {
+  background: rgba(255,255,255,0.07);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  transform: translateY(-3px);
+}
+
+/* ── Amber divider line ────────────────────── */
+.amber-rule {
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+  border: none;
+  margin: 0;
+}
+
+/* ── Luxury section (dark bg) ─────────────── */
+.luxury-section {
+  background: var(--espresso);
+  color: var(--cream-warm);
+}
+.luxury-section .section-label {
+  color: var(--amber);
+}
+
+/* ── Signature drink card on dark bg ─────── */
+.luxury-drink-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.luxury-drink-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+  background: rgba(255,255,255,0.07);
 }
 
 /* ── Category pills ─────────────────────── */
