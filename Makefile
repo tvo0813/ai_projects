@@ -229,7 +229,7 @@ static-build: static-data
 	cp frontend/dist/index.html frontend/dist/404.html
 	@echo "✓  Static build in frontend/dist/ (ready for GitHub Pages)"
 
-# Preview the static build locally
+# Preview the static build locallyy
 .PHONY: static-preview
 static-preview: static-build
 	@echo "🌐 Previewing static build at http://localhost:4173 ..."
