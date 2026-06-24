@@ -12,28 +12,30 @@ Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multip
 |---|---|
 | Frontend | React 18 + Vite + TypeScript + Framer Motion |
 | Backend | Python FastAPI + Uvicorn |
-| Data | Per-store CSVs in `backend/menus/<slug>/` (dev) · S3 (prod) |
+| Data | Per-store CSVs in `backend/menus/<slug>/` (dev) · DynamoDB (prod) |
 | Payments | Stripe (configured, not in active UI) |
 | POS Sync | Square (configured, not in active UI) |
 | Maps | Google Maps Embed API (keyed) with legacy fallback |
 | Menu Chatbot | Ollama (`llama3.2:1b`) — runs locally in Docker, no API costs |
 | Infrastructure | AWS ECS Fargate + S3/CloudFront, Terraform |
-| CI/CD | GitHub Actions (per-store path-filtered workflows) |
+| CI/CD | GitHub Actions (per-store path-filtered workflows + GitHub Pages static deploy) |
 
 ---
 
 ## Table of Contents
 
 1. [Local Development](#local-development)
-2. [Dev Script](#dev-script)
+2. [Makefile Commands](#makefile-commands)
 3. [Multi-Store System](#multi-store-system)
 4. [Pages & Features](#pages--features)
-5. [First-Time Deployment — Manual Setup](#first-time-deployment--manual-setup)
-6. [What the CI/CD Pipeline Does Automatically](#what-the-cicd-pipeline-does-automatically)
-7. [GitHub Secrets Reference](#github-secrets-reference)
-8. [Deployment Troubleshooting](#deployment-troubleshooting)
-9. [Adding a New Store](#adding-a-new-store)
-10. [API Reference](#api-reference)
+5. [Frontend Design System](#frontend-design-system)
+6. [GitHub Pages (Free Static Deploy)](#github-pages-free-static-deploy)
+7. [First-Time AWS Deployment](#first-time-aws-deployment)
+8. [What the CI/CD Pipeline Does Automatically](#what-the-cicd-pipeline-does-automatically)
+9. [GitHub Secrets Reference](#github-secrets-reference)
+10. [Deployment Troubleshooting](#deployment-troubleshooting)
+11. [Adding a New Store](#adding-a-new-store)
+12. [API Reference](#api-reference)
 
 ---
 
@@ -62,14 +64,6 @@ docker compose --env-file stores/daboba.env          -p daboba          up
 | Daboba | http://localhost:5175 | http://localhost:8002 | http://localhost:8002/api/docs |
 
 > **First startup:** Ollama pulls `llama3.2:1b` (~1.3 GB) automatically. Subsequent starts are instant — the model is cached in the `ollama_models` Docker volume.
-
-The `-p` flag isolates each stack with separate Docker networks, containers, and named Postgres volumes. Port offsets are defined in each store's `.env` file.
-
-### Restart backend after editing a CSV
-
-```bash
-docker compose -p phin-and-beans restart coffee-tea-api
-```
 
 ### Run frontend only
 
@@ -100,37 +94,50 @@ E2E_FRONTEND_URL=http://localhost:5173 E2E_API_URL=http://localhost:8000 npm tes
 
 ---
 
-## Dev Script
+## Makefile Commands
 
-`scripts/dev.sh` wraps the Docker commands for convenience.
+A `Makefile` at the repo root wraps all common operations.
 
-```bash
-./scripts/dev.sh phin-and-beans              # start store
-./scripts/dev.sh phin-drips                  # start other store
-./scripts/dev.sh phin-and-beans --expose     # start + ngrok tunnel
-./scripts/dev.sh phin-and-beans --clean      # full wipe + rebuild (fixes node_modules errors)
-```
-
-### `--expose` (ngrok)
-
-Creates a public HTTPS tunnel so anyone can view your local app.
-
-**One-time setup:**
-1. `brew install ngrok`
-2. Sign up at ngrok.com, get your auth token
-3. `ngrok config add-authtoken <your-token>`
-
-> Only share with trusted people. Stop it with `Ctrl+C` when done. Free tier URLs change on every restart.
-
-### `--clean` (fix corrupted node_modules)
-
-If you get a Vite error like `Cannot find module .../vite/dist/node/chunks/dep-*.js`, the `node_modules` inside Docker is corrupted. Run:
+### Per-store (always pass `STORE=`)
 
 ```bash
-./scripts/dev.sh phin-and-beans --clean
+make up      STORE=phin-and-beans   # build + start
+make down    STORE=phin-drips       # stop containers
+make restart STORE=daboba           # rebuild + restart
+make build   STORE=phin-and-beans   # rebuild images only
+make logs    STORE=phin-drips       # tail all logs
+make logs-web STORE=phin-drips      # frontend logs only
+make logs-api STORE=phin-drips      # backend logs only
+make ps      STORE=phin-and-beans   # show running containers
+make clean   STORE=phin-drips       # stop + wipe volumes
+make open    STORE=phin-and-beans   # open in browser
+make expose  STORE=phin-and-beans   # ngrok public tunnel
 ```
 
-This removes all containers and volumes with `phin` in the name, then does a full `--build` restart. The Ollama model volume is preserved.
+### All stores at once
+
+```bash
+make up-all      # spin up all 3
+make down-all    # stop all 3
+make clean-all   # full teardown all 3
+make ps-all      # container status all 3
+make status      # health check — shows ✓/✗ per store with ports
+```
+
+### GitHub Pages (static build)
+
+```bash
+make static-data                     # generate JSON from all store CSVs
+make static-build STORE=phin-drips   # full static build for GitHub Pages
+make static-preview STORE=phin-drips # build + preview locally at :4173
+```
+
+### Housekeeping
+
+```bash
+make nuke    # remove ALL Docker containers/volumes/networks (asks to confirm)
+make prune   # docker system prune to reclaim disk
+```
 
 ---
 
@@ -151,8 +158,6 @@ This removes all containers and volumes with `phin` in the name, then does a ful
 }
 ```
 
-`env_prefix` maps directly to GitHub secret names (e.g. `PAB` → `DEV_PAB_SECRET_KEY`).
-
 ### Per-store env files (`stores/<slug>.env`)
 
 | Variable | Purpose |
@@ -163,7 +168,6 @@ This removes all containers and volumes with `phin` in the name, then does a ful
 | `STORE_DOMAIN` | Backend CORS allowed origin |
 | `GRAB_URL` | "Order" button link in navbar |
 | `POSTGRES_DB` | Local dev PostgreSQL database name |
-| `MENU_S3_BUCKET` | S3 bucket for CSVs; blank = local only |
 | `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` | DynamoDB tables (prod) |
 | `OLLAMA_MODEL` | Ollama model name (default: `llama3.2:1b`) |
 | `FRONTEND_PORT` / `BACKEND_PORT` / `DB_PORT` / `DB_VOLUME` | Docker port offsets |
@@ -172,10 +176,9 @@ This removes all containers and volumes with `phin` in the name, then does a ful
 
 ```
 backend/menus/<slug>/
-├── menu.csv        — drink menu (restart backend after changes)
+├── menu.csv        — drink menu
 ├── deals.csv       — public deals/promotions
-├── locations.csv   — physical store locations
-└── images/         — drink photos served at /static/images/
+└── locations.csv   — physical store locations
 ```
 
 **menu.csv columns:** `item_id, name, category, description, price, image_url, is_available, tags, customizations`
@@ -199,9 +202,7 @@ terraform/envs/
 └── daboba/prod/          VPC: 10.5.0.0/16
 ```
 
-Shared state: S3 `coffee-tea-app-tfstate` + DynamoDB lock `coffee-tea-app-tfstate-lock`. Dev → `us-east-2`, Prod → `us-east-1`.
-
-ECS tasks run in **public subnets** with `assign_public_ip = true` (no NAT Gateway — saves ~$33/store/month).
+Shared state: S3 `coffee-tea-app-tfstate` + DynamoDB lock `coffee-tea-app-tfstate-lock`.
 
 ---
 
@@ -209,50 +210,140 @@ ECS tasks run in **public subnets** with `assign_public_ip = true` (no NAT Gatew
 
 | Route | Page | Description |
 |---|---|---|
-| `/` | Home | Hero, Vietnam origin story, 4 pillars, live signature drinks, menu chatbot |
-| `/menu` | Menu | Section browse (Signature, Coffee, Matcha, Latte, Tea, Hot Drinks); circular cards; click for description modal |
-| `/deals` | Deals | Active deals from `deals.csv`; empty state if none |
+| `/` | Home | Hero (coffee beans bg + mouse-parallax floating beans), Vietnam origin story with live auto-brewing phin SVG, 4 pillars (glassmorphism cards), signature drinks, menu chatbot |
+| `/menu` | Menu | Section browse (Signature, Coffee, Matcha, Latte, Tea, Hot Drinks); 3D magnetic cards with mouse-tracking tilt + specular glare; click for detail modal |
+| `/deals` | Deals | Active deals from `deals.csv` |
 | `/locations` | Locations | Google Maps embed + address, hours, phone |
 | `/careers` | Careers | Benefits, 3-step apply process, email CTA |
 | `/privacy` | Privacy Policy | Loaded from `frontend/public/privacy-policy.txt` |
 
 ### Menu Chatbot
 
-The Home page includes an AI assistant powered by Ollama (`llama3.2:1b`) running locally in Docker. Rules:
-- Menu items and drink selection only — no off-topic answers
-- Never reveals ingredients or preparation
+AI assistant powered by Ollama (`llama3.2:1b`) running locally in Docker. In static/GitHub Pages mode it shows an offline card instead. Rules:
+- Menu items and drink selection only
 - Always lists 3+ drinks with prices when recommending
-- Oat milk available as a dairy-free substitute for an extra charge
+- Oat milk available as dairy-free substitute for extra charge
 
 ---
 
-## First-Time Deployment — Manual Setup
+## Frontend Design System
 
-This is everything you must do **once before your first push**. After this, the CI/CD pipeline handles everything automatically.
+The frontend uses a **Dark Luxury Espresso** design — deep espresso backgrounds, amber gold accents, glassmorphism cards, and animated SVGs.
+
+### CSS Design Tokens (`frontend/src/index.css`)
+
+```css
+/* Original green palette (still used on menu/deals/locations pages) */
+--green:        #00704A;
+--green-dark:   #1E3932;
+--cream:        #F2F0EB;
+
+/* Dark Luxury Espresso (home page + navbar) */
+--espresso:       #140C08;
+--espresso-mid:   #1E1009;
+--espresso-light: #3A1E0F;
+--amber:          #C8A96E;
+--amber-light:    #E8D5A3;
+--amber-dark:     #9E7A3F;
+--cream-warm:     #F5EDD6;
+--glass-bg:       rgba(255,255,255,0.04);
+--glass-border:   rgba(255,255,255,0.09);
+```
+
+### Key Components
+
+| Component | Location | What it does |
+|---|---|---|
+| `Navbar.tsx` | `components/layout/` | Sticky frosted-glass dark bar; amber active states |
+| `ChatBot.tsx` | `components/` | Live AI chat (Ollama) or offline card in static mode |
+| `MenuCard.tsx` | `components/menu/` | 3D tilt + specular glare on mouse move; dark modal |
+| `PhinBrewTimer.tsx` | `components/` | Standalone auto-brew timer component (available but not placed on any page) |
+| `AutoPhin` | inlined in `Home.tsx` | SVG phin filter that auto-drips and fills a glass on a 12s loop |
+| `CoffeeBean` / `FloatingBean` | inlined in `Home.tsx` | Mouse-parallax floating SVG coffee beans in the hero |
+| `AnimatedTitle` | inlined in `Home.tsx` | Per-letter stagger animation for the hero store name |
+
+### Static Mode (`VITE_STATIC_MODE=true`)
+
+When `VITE_STATIC_MODE=true` is set at build time:
+- `api/menu.ts`, `api/deals.ts`, `api/locations.ts` read from `/data/<slug>/*.json` instead of the backend
+- `ChatBot.tsx` renders an offline card ("available in-store")
+- No backend or Ollama required
+
+To re-enable the live backend: remove `VITE_STATIC_MODE` or set it to `false`.
+
+---
+
+## GitHub Pages (Free Static Deploy)
+
+Deploy any store as a fully static site — no backend, no Docker, no cost.
+
+### How it works
+
+1. `scripts/generate-static-data.js` converts all store CSVs → `frontend/public/data/<slug>/*.json`
+2. Vite builds with `VITE_STATIC_MODE=true` — API calls read the JSON files, chatbot shows offline card
+3. GitHub Actions deploys `frontend/dist/` to GitHub Pages automatically on every push to `main`
+
+### Workflow file
+
+`.github/workflows/gh-pages.yml` — triggers on pushes to `main` that touch `frontend/`, `backend/menus/`, or the workflow itself.
+
+### Setup (one-time)
+
+1. Go to your repo → **Settings → Pages → Source → GitHub Actions**
+2. Push to `main` — the workflow fires automatically
+
+Your site: `https://<your-username>.github.io/<repo-name>`
+
+### Choose which store to deploy
+
+**Option A — GitHub repo variables (no code change needed):**
+Settings → Variables → Actions → add:
+
+| Variable | Value |
+|---|---|
+| `VITE_STORE_SLUG` | `phin-drips` |
+| `VITE_STORE_NAME` | `Phin Drips` |
+| `VITE_STORE_TAGLINE` | `Bold Vietnamese drip coffee, your way.` |
+| `VITE_GRAB_URL` | your Grab URL |
+
+**Option B — Change defaults in the workflow file** (`gh-pages.yml` build step env vars).
+
+### Local static preview
+
+```bash
+make static-build STORE=phin-drips    # build
+make static-preview STORE=phin-drips  # build + serve at localhost:4173
+```
+
+### Regenerate data after editing CSVs
+
+```bash
+make static-data   # regenerates all stores' JSON
+git add frontend/public/data/
+git commit -m "update menu data"
+git push origin main   # triggers re-deploy
+```
+
+---
+
+## First-Time AWS Deployment
+
+This is everything you must do **once before your first push**. After this, CI/CD handles everything.
 
 ### Step 1 — AWS IAM user for GitHub Actions
 
 1. Go to **AWS Console → IAM → Users → Create user**
 2. Name: `coffee-tea-app-github-actions`
-3. Select **Attach policies directly → Create policy**
-4. Paste the contents of `terraform/github-actions-iam-policy.json` as JSON → name it `coffee-tea-github-actions`
-5. Attach that policy to the user
-6. Go to the user → **Security credentials → Create access key**
-7. Select **Third-party service** → save the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+3. Attach the policy from `terraform/github-actions-iam-policy.json`
+4. Create access key → save `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 
 ### Step 2 — Bootstrap Terraform remote state
-
-Run this **once** from your local machine with your personal AWS credentials (not the GitHub Actions user):
 
 ```bash
 bash terraform/bootstrap.sh
 ```
 
-This creates:
-- S3 bucket `coffee-tea-app-tfstate` (versioned + encrypted) — stores all Terraform state
-- DynamoDB table `coffee-tea-app-tfstate-lock` — prevents concurrent Terraform runs from corrupting state
-
-If this fails, check that your local AWS credentials have S3 and DynamoDB create permissions.
+Creates S3 bucket `coffee-tea-app-tfstate` + DynamoDB lock table.
 
 ### Step 3 — Create the ECR repository
 
@@ -260,302 +351,139 @@ If this fails, check that your local AWS credentials have S3 and DynamoDB create
 aws ecr create-repository --repository-name coffee-tea-api --region us-east-2
 ```
 
-The output includes `repositoryUri` — save it. It looks like:
-```
-123456789012.dkr.ecr.us-east-2.amazonaws.com/coffee-tea-api
-```
-
-This is your `ECR_REPO` GitHub variable.
+Save the `repositoryUri` as your `ECR_REPO` GitHub variable.
 
 ### Step 4 — Request ACM certificates (prod only)
 
-CloudFront requires SSL certificates in **us-east-1** (regardless of where your resources are).
+CloudFront requires SSL certificates in **us-east-1**.
 
-For each store domain:
-1. **AWS Console → Certificate Manager → Switch region to us-east-1**
-2. **Request a public certificate**
-3. Add domains: `phinandbeans.com` and `www.phinandbeans.com`
-4. Choose **DNS validation**
-5. AWS gives you CNAME records — add them to your domain registrar (GoDaddy, Namecheap, etc.)
-6. Wait for status to show **Issued** (can take a few minutes)
-7. Copy the **Certificate ARN** — save it as `PROD_PAB_ACM_CERT_ARN`
-
-Repeat for each store domain (`phindrips.com` → `PROD_PD_ACM_CERT_ARN`, `daboba.com` → `PROD_DB_ACM_CERT_ARN`).
-
-> You can skip this for dev — dev deployments don't use custom domains.
+For each store domain: Certificate Manager → us-east-1 → Request public certificate → DNS validation → save the Certificate ARN as `PROD_{PREFIX}_ACM_CERT_ARN`.
 
 ### Step 5 — Set up Ollama for prod
 
-Ollama runs in Docker locally, but in production it needs to be a server that ECS can reach. The simplest setup:
-
-1. Launch an EC2 instance (`t3.medium` minimum — 2 vCPU, 4GB RAM) in the same region as your ECS services
-2. SSH in and install Ollama:
-   ```bash
-   curl -fsSL https://ollama.com/install.sh | sh
-   ollama pull llama3.2:1b
-   ```
-3. Make Ollama start on boot:
-   ```bash
-   sudo systemctl enable ollama
-   sudo systemctl start ollama
-   ```
-4. In your EC2 security group, add an inbound rule: **TCP port 11434** from the ECS security group
-5. Note the EC2 **private IP** (e.g. `10.0.5.100`) — your `OLLAMA_BASE_URL` is `http://10.0.5.100:11434`
-
-> You can share one Ollama instance across all stores and environments as long as it's reachable from each ECS cluster.
+1. Launch EC2 (`t3.medium` minimum) in the same region as ECS
+2. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh && ollama pull llama3.2:1b`
+3. Enable on boot: `sudo systemctl enable ollama`
+4. Allow TCP 11434 inbound from the ECS security group
+5. Save `http://<private-ip>:11434` as `OLLAMA_BASE_URL`
 
 ### Step 6 — Add GitHub Secrets and Variables
 
-Go to your repo → **Settings → Secrets and variables → Actions**
+**Variables:** `ECR_REPO`
 
-#### Variables (plain text, not secret)
+**Shared secrets:** `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GOOGLE_MAPS_API_KEY`
 
-| Variable | Value |
-|---|---|
-| `ECR_REPO` | Full ECR URI from Step 3 |
+**Per-store secrets** (pattern: `{ENV}_{PREFIX}_{VAR}`):
+`SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `OLLAMA_BASE_URL`, `ACM_CERT_ARN` (prod only)
 
-#### Shared Secrets
-
-| Secret | Value | Where to get it |
-|---|---|---|
-| `AWS_ACCESS_KEY_ID` | IAM access key | Step 1 |
-| `AWS_SECRET_ACCESS_KEY` | IAM secret key | Step 1 |
-| `GOOGLE_MAPS_API_KEY` | Maps Embed API key | Google Cloud Console (optional — maps work without it via legacy fallback) |
-
-#### Phin and Beans Secrets (`PAB` prefix)
-
-| Secret | Value |
-|---|---|
-| `DEV_PAB_SECRET_KEY` | Long random string — run `openssl rand -hex 32` |
-| `DEV_PAB_STRIPE_SECRET_KEY` | From Stripe dashboard → Developers → API keys (use test key for dev) |
-| `DEV_PAB_STRIPE_WEBHOOK_SECRET` | From Stripe dashboard → Webhooks → signing secret |
-| `DEV_PAB_SQUARE_ACCESS_TOKEN` | From Square Developer dashboard (or leave blank) |
-| `DEV_PAB_SQUARE_LOCATION_ID` | From Square dashboard (or leave blank) |
-| `DEV_PAB_OLLAMA_BASE_URL` | Private IP URL of your Ollama EC2 (Step 5), e.g. `http://10.0.5.100:11434` |
-| `PROD_PAB_SECRET_KEY` | Different random string for prod — run `openssl rand -hex 32` |
-| `PROD_PAB_STRIPE_SECRET_KEY` | Live Stripe key for prod |
-| `PROD_PAB_STRIPE_WEBHOOK_SECRET` | Live Stripe webhook secret for prod |
-| `PROD_PAB_SQUARE_ACCESS_TOKEN` | Prod Square token |
-| `PROD_PAB_SQUARE_LOCATION_ID` | Prod Square location |
-| `PROD_PAB_OLLAMA_BASE_URL` | Prod Ollama server URL |
-| `PROD_PAB_ACM_CERT_ARN` | Certificate ARN for phinandbeans.com from Step 4 |
-
-#### Phin Drips Secrets (`PD` prefix)
-
-| Secret | Value |
-|---|---|
-| `DEV_PD_SECRET_KEY` | `openssl rand -hex 32` |
-| `DEV_PD_STRIPE_SECRET_KEY` | Stripe test key |
-| `DEV_PD_STRIPE_WEBHOOK_SECRET` | Stripe webhook secret |
-| `DEV_PD_SQUARE_ACCESS_TOKEN` | Square token (or blank) |
-| `DEV_PD_SQUARE_LOCATION_ID` | Square location (or blank) |
-| `DEV_PD_OLLAMA_BASE_URL` | Ollama server URL |
-| `PROD_PD_SECRET_KEY` | `openssl rand -hex 32` |
-| `PROD_PD_STRIPE_SECRET_KEY` | Prod Stripe key |
-| `PROD_PD_STRIPE_WEBHOOK_SECRET` | Prod Stripe webhook |
-| `PROD_PD_SQUARE_ACCESS_TOKEN` | Prod Square token |
-| `PROD_PD_SQUARE_LOCATION_ID` | Prod Square location |
-| `PROD_PD_OLLAMA_BASE_URL` | Prod Ollama server URL |
-| `PROD_PD_ACM_CERT_ARN` | Certificate ARN for phindrips.com from Step 4 |
-
-#### Daboba Secrets (`DB` prefix)
-
-| Secret | Value |
-|---|---|
-| `DEV_DB_SECRET_KEY` | `openssl rand -hex 32` |
-| `DEV_DB_STRIPE_SECRET_KEY` | Stripe test key |
-| `DEV_DB_STRIPE_WEBHOOK_SECRET` | Stripe webhook secret |
-| `DEV_DB_SQUARE_ACCESS_TOKEN` | Square token (or blank) |
-| `DEV_DB_SQUARE_LOCATION_ID` | Square location (or blank) |
-| `DEV_DB_OLLAMA_BASE_URL` | Ollama server URL |
-| `PROD_DB_SECRET_KEY` | `openssl rand -hex 32` |
-| `PROD_DB_STRIPE_SECRET_KEY` | Prod Stripe key |
-| `PROD_DB_STRIPE_WEBHOOK_SECRET` | Prod Stripe webhook |
-| `PROD_DB_SQUARE_ACCESS_TOKEN` | Prod Square token |
-| `PROD_DB_SQUARE_LOCATION_ID` | Prod Square location |
-| `PROD_DB_OLLAMA_BASE_URL` | Prod Ollama server URL |
-| `PROD_DB_ACM_CERT_ARN` | Certificate ARN for daboba.com from Step 4 |
+Store prefixes: `PAB` (Phin and Beans), `PD` (Phin Drips), `DB` (Daboba)
 
 ### Step 7 — Create GitHub Environments
 
-Go to **Settings → Environments**:
+Settings → Environments:
+1. **`dev`** — no protection rules
+2. **`prod`** — enable Required reviewers (manual approval gate)
 
-1. Create **`dev`** — no protection rules needed
-2. Create **`prod`** — enable **Required reviewers** and add yourself. This creates the manual approval gate that blocks prod deploys until you click approve.
-
-### Step 8 — Push code to trigger the first deploy
+### Step 8 — Push to trigger first deploy
 
 ```bash
 git push origin main
 ```
 
-The workflow runs automatically. Watch it at **Actions** tab in your repo. On first run, Terraform will create all AWS infrastructure from scratch — expect 10–15 minutes.
+First run provisions all AWS infrastructure — expect 10–15 minutes.
 
 ---
 
 ## What the CI/CD Pipeline Does Automatically
 
-Once the manual setup above is done, every push triggers this automatically:
-
-### Trigger logic
-
-Three separate workflow files — one per store. Each only triggers on paths relevant to that store:
-
-| Changed path | PAB | PD | DB |
-|---|---|---|---|
-| `backend/app/**`, `frontend/src/**` | ✅ | ✅ | ✅ |
-| `docker-compose.yml` | ✅ | ✅ | ✅ |
-| `backend/menus/phin-and-beans/**` | ✅ | ❌ | ❌ |
-| `backend/menus/phin-drips/**` | ❌ | ✅ | ❌ |
-| `backend/menus/daboba/**` | ❌ | ❌ | ✅ |
-| `stores/phin-and-beans.env` | ✅ | ❌ | ❌ |
-| `terraform/envs/phin-and-beans/**` | ✅ | ❌ | ❌ |
-
-### Pipeline stages
+Three workflow files — one per store, path-filtered:
 
 ```
-push / PR (matching paths)
+push to main
     │
-    ├─ build-backend    Docker image → ECR (tagged with git SHA + latest)
-    ├─ build-frontend   Vite build (bakes VITE_STORE_NAME/TAGLINE/GRAB_URL) → artifact
+    ├─ build-backend    Docker image → ECR
+    ├─ build-frontend   Vite build (bakes store env vars) → artifact
     ├─ unit-test        pytest
     │
-    ▼ (all pass)
-    │
-    ├─ deploy-dev       terraform apply
-    │                   → provisions VPC, ECS cluster, Secrets Manager,
-    │                     S3 bucket, CloudFront distribution (first run only)
-    │                   → force new ECS deployment (rolling update)
-    │                   → aws s3 sync dist/ + CloudFront invalidation
-    │
+    ▼
+    ├─ deploy-dev       terraform apply + ECS rolling deploy + S3/CloudFront sync
     ├─ e2e              Playwright tests against live dev URL
     │
-    ▼ (push to main only + manual approval)
-    │
+    ▼ (manual approval)
     └─ deploy-prod      same as deploy-dev against prod environment
 ```
-
-### AWS resources Terraform creates automatically
-
-On first run, Terraform provisions everything from scratch:
-
-| Resource | What it is |
-|---|---|
-| VPC + public subnets | Isolated network per store (2 AZs, public only — no NAT Gateway) |
-| Internet Gateway | Public internet access |
-| Security groups | ECS (8000 inbound from internet) |
-| ECS cluster + task definition | Runs the FastAPI container on Fargate |
-| ECS service | Manages rolling deploys, health checks; `assign_public_ip = true` |
-| Secrets Manager | Stores secret key, Stripe/Square keys — ECS reads them at runtime |
-| IAM roles | Task execution role (pull ECR + read Secrets Manager) + task role (DynamoDB access) |
-| S3 bucket | Hosts the frontend static build |
-| CloudFront distribution | CDN in front of S3 (HTTPS, caching) |
-| CloudWatch log group | ECS container logs, 14-day retention (30-day prod) |
 
 ---
 
 ## GitHub Secrets Reference
 
-Quick reference for the naming pattern: `{ENV}_{PREFIX}_{VAR}`
+Pattern: `{ENV}_{PREFIX}_{VAR}`
 
 | Part | Values |
 |---|---|
 | `ENV` | `DEV` or `PROD` |
-| `PREFIX` | `PAB` (Phin and Beans), `PD` (Phin Drips), `DB` (Daboba) |
+| `PREFIX` | `PAB`, `PD`, `DB` |
 | `VAR` | `SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `OLLAMA_BASE_URL` |
 
-Prod-only additions: `PROD_{PREFIX}_ACM_CERT_ARN`
+Prod-only: `PROD_{PREFIX}_ACM_CERT_ARN`
 
-Shared (no prefix): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GOOGLE_MAPS_API_KEY`
+Shared: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GOOGLE_MAPS_API_KEY`
 
-Repository variable (not secret): `ECR_REPO`
-
-> No `DB_PASSWORD` secrets needed — RDS is not deployed.
+Variable (not secret): `ECR_REPO`
 
 ---
 
 ## Deployment Troubleshooting
 
-### Terraform apply fails on first run
+### Terraform / AWS
 
-**Error: `NoSuchBucket` or `AccessDenied` on state backend**
-- You haven't run `bootstrap.sh` yet, or it failed — run it now
-- Or your GitHub Actions IAM user doesn't have S3 access — check the policy in `terraform/github-actions-iam-policy.json` is attached
+**`NoSuchBucket` on state backend** — run `bash terraform/bootstrap.sh`
 
-**Error: `InvalidClientTokenId` or `AuthFailure`**
-- `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` secret is wrong or has a leading/trailing space
-- Go to Settings → Secrets → delete and re-add both
+**`InvalidClientTokenId`** — AWS secret wrong or has whitespace, re-add both secrets
 
-**Error: `RepositoryNotFoundException` on ECR push**
-- You didn't create the ECR repo in Step 3 — run `aws ecr create-repository --repository-name coffee-tea-api --region us-east-2`
-- Or `ECR_REPO` variable has the wrong value — confirm it matches the `repositoryUri` from ECR exactly
+**`RepositoryNotFoundException`** — create ECR repo (Step 3) or fix `ECR_REPO` variable
 
-### ECS deploy fails
+**ECS task stuck in PENDING** — check CloudWatch logs (`/ecs/<store>-dev-api`), confirm all Secrets Manager keys exist
 
-**Error: ECS service stuck in `PENDING` or health checks failing**
-- Check CloudWatch logs: AWS Console → CloudWatch → Log groups → `/ecs/phin-and-beans-dev-api`
-- Common cause: missing secret in Secrets Manager — confirm all keys exist and have values
-- Check Secrets Manager: AWS Console → Secrets Manager → `phin-and-beans-dev/coffee-tea-secrets` → Retrieve secret value
+**`exec format error` in ECS** — image built on Apple Silicon; add `--platform linux/amd64` to Docker build
 
-**Error: `exec format error` in ECS logs**
-- Docker image was built on Apple Silicon (arm64) but ECS needs amd64
-- Add `--platform linux/amd64` to the Docker build in the workflow, or use `docker buildx`
+### GitHub Pages
 
-**ECS task keeps restarting**
-- Missing required env var — check CloudWatch logs for a Python `ValidationError` or missing config error
-- Confirm all secrets in Secrets Manager match what `backend/app/config.py` expects
+**Blank page / 404 on assets** — `vite.config.ts` sets `base: '/ai_projects/'` in static mode; confirm it matches your repo name
 
-### Frontend shows blank page or API errors
+**Deep link routes 404** — `404.html` redirect script handles this; confirm it was generated by the workflow
 
-**Blank page after CloudFront deploy**
-- CloudFront is serving cached `index.html` — wait 2–3 minutes for the invalidation to propagate
-- Or check S3 bucket: AWS Console → S3 → `phin-and-beans-dev-frontend` → confirm `index.html` is there
+**Menu/deals empty** — static JSON wasn't generated; run `make static-data` and commit `frontend/public/data/`
 
-**API calls return 502/504**
-- ECS service is unhealthy — check CloudWatch logs
-- Confirm `/api/health` returns 200
+### Chatbot
 
-### ACM certificate not issuing
+**Dev (Docker): 500 error** — Ollama still pulling model, wait for `ollama-init` to exit 0; run `docker exec <ollama-container> ollama list` to confirm
 
-- DNS validation CNAME records not added yet — add them at your domain registrar
-- Propagation can take up to 30 minutes — check status in Certificate Manager
-- Make sure you're in **us-east-1** — CloudFront requires it
-
-### Chatbot returns 500
-
-**In dev (Docker):**
-- Ollama container is still pulling the model — wait for `ollama-init` to finish (`Exited (0)` = success, not an error)
-- Run `docker logs phin-and-beans-ollama-1` — if you see `404` on `/v1/chat/completions`, the model isn't loaded yet
-- Run `docker exec phin-and-beans-ollama-1 ollama list` to confirm `llama3.2:1b` is present
-
-**In prod (ECS):**
-- `OLLAMA_BASE_URL` secret is wrong or the EC2 Ollama server is unreachable
-- Check the EC2 security group allows port 11434 inbound from the ECS security group
-- SSH into the EC2 and run `curl http://localhost:11434/api/tags` — should return JSON with the model list
+**Prod (ECS): 500 error** — check `OLLAMA_BASE_URL` in Secrets Manager; verify EC2 security group allows port 11434
 
 ---
 
 ## Adding a New Store
 
-1. Add entry to `stores/stores.json` with a unique `slug` and `env_prefix`
-2. Create `stores/<slug>.env` with all variables + unique port offsets (increment from last store)
+1. Add entry to `stores/stores.json` with unique `slug` and `env_prefix`
+2. Create `stores/<slug>.env` with all variables + unique port offsets
 3. Create `backend/menus/<slug>/menu.csv`, `deals.csv`, `locations.csv`
-4. Copy Terraform: `cp -r terraform/envs/phin-drips terraform/envs/<slug>` — update `locals`, VPC CIDRs (use next unused `/16`), S3 state key
-5. Copy workflow: `cp .github/workflows/ci-cd-phin-drips.yml .github/workflows/ci-cd-<slug>.yml` — update store name, slug, tagline, grab URL, secret prefix, and all path filters
-6. Add GitHub secrets: `DEV_{PREFIX}_*`, `PROD_{PREFIX}_*`, `PROD_{PREFIX}_ACM_CERT_ARN`
-7. Test locally: `docker compose --env-file stores/<slug>.env -p <slug> up`
+4. Copy Terraform: `cp -r terraform/envs/phin-drips terraform/envs/<slug>` — update `locals`, VPC CIDRs, S3 state key
+5. Copy workflow: `cp .github/workflows/ci-cd-phin-drips.yml .github/workflows/ci-cd-<slug>.yml` — update all store-specific values
+6. Add GitHub secrets: `DEV_{PREFIX}_*`, `PROD_{PREFIX}_*`
+7. Test locally: `make up STORE=<slug>`
 
 ---
 
 ## API Reference
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/api/health` | Public | Health check |
-| GET | `/api/menu/` | Public | List items (`?category=` optional) |
-| GET | `/api/menu/categories` | Public | List categories |
-| GET | `/api/menu/{id}` | Public | Get single item |
-| GET | `/api/deals/public` | Public | Active deals from CSV |
-| GET | `/api/locations/` | Public | Store locations with Maps URLs |
-| POST | `/api/chat/` | Public | Menu chatbot (Ollama) |
-| GET | `/static/images/{filename}` | Public | Local menu item images |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| GET | `/api/menu/` | List items (`?category=` optional) |
+| GET | `/api/menu/categories` | List categories |
+| GET | `/api/menu/{id}` | Get single item |
+| GET | `/api/deals/public` | Active deals |
+| GET | `/api/locations/` | Store locations with Maps URLs |
+| POST | `/api/chat/` | Menu chatbot (Ollama) |
+| GET | `/static/images/{filename}` | Menu item images |
