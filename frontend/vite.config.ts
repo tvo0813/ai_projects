@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: viteEnv,
+    // GitHub Pages serves from /<repo-name>/ — set base only in static/CI builds
+    base: process.env.VITE_STATIC_MODE === 'true' ? '/ai_projects/' : '/',
     server: {
       port: 5173,
       allowedHosts: true,

@@ -53,9 +53,16 @@ jobs:
           VITE_GRAB_URL:      ${{ vars.VITE_GRAB_URL      || '' }}
         run: npm run build
 
-      # SPA fallback: copy index.html → 404.html so deep links work on GitHub Pages
+      # SPA fallback: 404.html saves the path and redirects to index so React Router works
       - name: SPA 404 fallback
-        run: cp frontend/dist/index.html frontend/dist/404.html
+        run: |
+          cat > frontend/dist/404.html << 'EOF'
+          <!doctype html>
+          <html><head>
+          <meta charset="UTF-8"/>
+          <script>sessionStorage.setItem('spa_redirect', location.pathname + location.search + location.hash); location.replace('/ai_projects/');</script>
+          </head></html>
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
