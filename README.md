@@ -167,10 +167,9 @@ make prune   # docker system prune to reclaim disk
 | `STORE_TAGLINE` | Frontend hero section |
 | `STORE_DOMAIN` | Backend CORS allowed origin |
 | `GRAB_URL` | "Order" button link in navbar |
-| `POSTGRES_DB` | Local dev PostgreSQL database name |
-| `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` | DynamoDB tables (prod) |
+| `DYNAMODB_TABLE_MENU` / `DYNAMODB_TABLE_DEALS` | DynamoDB tables (prod only) |
 | `OLLAMA_MODEL` | Ollama model name (default: `llama3.2:1b`) |
-| `FRONTEND_PORT` / `BACKEND_PORT` / `DB_PORT` / `DB_VOLUME` | Docker port offsets |
+| `FRONTEND_PORT` / `BACKEND_PORT` | Docker port offsets |
 
 ### Per-store data files
 
@@ -210,10 +209,10 @@ Shared state: S3 `coffee-tea-app-tfstate` + DynamoDB lock `coffee-tea-app-tfstat
 
 | Route | Page | Description |
 |---|---|---|
-| `/` | Home | Hero (coffee beans bg + mouse-parallax floating beans), Vietnam origin story with live auto-brewing phin SVG, 4 pillars (glassmorphism cards), signature drinks, menu chatbot |
-| `/menu` | Menu | Section browse (Signature, Coffee, Matcha, Latte, Tea, Hot Drinks); 3D magnetic cards with mouse-tracking tilt + specular glare; click for detail modal |
-| `/deals` | Deals | Active deals from `deals.csv` |
-| `/locations` | Locations | Google Maps embed + address, hours, phone |
+| `/` | Home | Full-screen hero (coffee beans bg + canvas particle system + mouse-parallax floating beans + animated blobs), scrolling marquee tape, Vietnam origin story with live auto-brewing phin SVG, 4 pillars (glassmorphism cards), AI chatbot, horizontal drag-to-scroll signature drinks gallery, CTA band |
+| `/menu` | Menu | Section browse (Signature, Coffee, Matcha, Latte, Tea, Hot Drinks); sticky amber-underline category nav; 3D magnetic cards with mouse-tracking tilt + specular glare; click for detail modal |
+| `/deals` | Deals | Active deals from `deals.csv` with SVG icons, per-badge color tokens (Daily/Weekly/Birthday/Loyalty), expiry dates |
+| `/locations` | Locations | Google Maps embed (legacy fallback when API key absent) + address, hours, phone with SVG icon rows |
 | `/careers` | Careers | Benefits, 3-step apply process, email CTA |
 | `/privacy` | Privacy Policy | Loaded from `frontend/public/privacy-policy.txt` |
 
@@ -228,37 +227,51 @@ AI assistant powered by Ollama (`llama3.2:1b`) running locally in Docker. In sta
 
 ## Frontend Design System
 
-The frontend uses a **Dark Luxury Espresso** design — deep espresso backgrounds, amber gold accents, glassmorphism cards, and animated SVGs.
+The frontend uses a **Dark Luxury Espresso** design — deep espresso backgrounds, amber gold accents, glassmorphism cards, and animated SVGs across every page.
+
+### Typography
+
+| Role | Font |
+|---|---|
+| Display / headings | Cormorant Garamond (italic, weight 300–700) |
+| Body / UI / labels | Jost (weight 300–700) |
 
 ### CSS Design Tokens (`frontend/src/index.css`)
 
 ```css
-/* Original green palette (still used on menu/deals/locations pages) */
+/* Dark Luxury Espresso — used site-wide */
+--espresso:        #0E0806;   /* page background */
+--espresso-mid:    #160D09;   /* section alternates, page headers */
+--espresso-light:  #2E1710;
+--espresso-card:   #1A0E0A;   /* modals */
+--amber:           #C8A96E;   /* primary accent, CTAs */
+--amber-light:     #E8D5A3;
+--amber-dark:      #9E7A3F;
+--cream-warm:      #F5EDD6;   /* headings, body text on dark */
+--glass-bg:        rgba(255,255,255,0.035);   /* glassmorphism cards */
+--glass-border:    rgba(255,255,255,0.07);
+
+/* Green palette (retained for light-mode form/input elements) */
 --green:        #00704A;
 --green-dark:   #1E3932;
 --cream:        #F2F0EB;
-
-/* Dark Luxury Espresso (home page + navbar) */
---espresso:       #140C08;
---espresso-mid:   #1E1009;
---espresso-light: #3A1E0F;
---amber:          #C8A96E;
---amber-light:    #E8D5A3;
---amber-dark:     #9E7A3F;
---cream-warm:     #F5EDD6;
---glass-bg:       rgba(255,255,255,0.04);
---glass-border:   rgba(255,255,255,0.09);
 ```
 
 ### Key Components
 
 | Component | Location | What it does |
 |---|---|---|
-| `Navbar.tsx` | `components/layout/` | Sticky frosted-glass dark bar; amber active states |
-| `ChatBot.tsx` | `components/` | Live AI chat (Ollama) or offline card in static mode |
-| `MenuCard.tsx` | `components/menu/` | 3D tilt + specular glare on mouse move; dark modal |
-| `PhinBrewTimer.tsx` | `components/` | Standalone auto-brew timer component (available but not placed on any page) |
+| `Navbar.tsx` | `components/layout/` | Scroll-aware frosted-glass dark bar; background deepens past 30px scroll; spring-animated logo; AnimatePresence mobile drawer |
+| `Footer.tsx` | `components/layout/` | 4-column dark luxury footer: brand, Explore links, Legal links, pull-quote |
+| `ChatBot.tsx` | `components/` | Live AI chat (Ollama) with dark glass UI, or offline card in static mode |
+| `MenuCard.tsx` | `components/menu/` | 3D tilt + amber specular glare on mouse move; dark espresso detail modal |
+| `PhinBrewTimer.tsx` | `components/` | Standalone auto-brew timer (available but not placed on any page) |
+| `MagneticCursor` | inlined in `Home.tsx` | Custom dot + ring cursor with spring lag and scale-on-hover |
+| `ScrollProgress` | inlined in `Home.tsx` | Amber gradient progress bar fixed at top of viewport |
 | `AutoPhin` | inlined in `Home.tsx` | SVG phin filter that auto-drips and fills a glass on a 12s loop |
+| `DragGallery` | inlined in `Home.tsx` | Horizontal mouse-drag scrollable signature drinks track |
+| `MarqueeStrip` | inlined in `Home.tsx` | Infinite scrolling label tape; pauses on hover |
+| `AnimatedCounter` | inlined in `Home.tsx` | IntersectionObserver-triggered count-up numbers |
 | `CoffeeBean` / `FloatingBean` | inlined in `Home.tsx` | Mouse-parallax floating SVG coffee beans in the hero |
 | `AnimatedTitle` | inlined in `Home.tsx` | Per-letter stagger animation for the hero store name |
 

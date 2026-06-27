@@ -13,35 +13,29 @@ const SECTIONS: { key: string; label: string }[] = [
 ]
 
 export default function Menu() {
-  const [items, setItems]       = useState<MenuItem[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [activeSection, setActive] = useState('signature')
+  const [items, setItems]           = useState<MenuItem[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [activeSection, setActive]  = useState('signature')
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
-  const navRef = useRef<HTMLDivElement>(null)
+  const navRef      = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     getMenuItems().then(setItems).finally(() => setLoading(false))
   }, [])
 
-  // Highlight section nav pill as user scrolls
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive(entry.target.id)
-        })
-      },
+      (entries) => { entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id) }) },
       { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
     )
-    Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el))
+    Object.values(sectionRefs.current).forEach(el => el && observer.observe(el))
     return () => observer.disconnect()
   }, [items])
 
   const grouped = SECTIONS.reduce<Record<string, MenuItem[]>>((acc, { key }) => {
-    acc[key] = items.filter((i) => {
+    acc[key] = items.filter(i => {
       if (!i.is_available) return false
       if (i.category === key) return true
-      // Signature items also appear in their base section via tags
       if (key !== 'signature' && i.category === 'signature' && i.tags?.includes(key)) return true
       return false
     })
@@ -51,62 +45,48 @@ export default function Menu() {
   const scrollTo = (key: string) => {
     const el = sectionRefs.current[key]
     if (!el) return
-    const navHeight = (navRef.current?.offsetHeight ?? 0) + 68 // 68 = navbar height
+    const navHeight = (navRef.current?.offsetHeight ?? 0) + 68
     const top = el.getBoundingClientRect().top + window.scrollY - navHeight - 16
     window.scrollTo({ top, behavior: 'smooth' })
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
-      {/* Header */}
-      <section style={{
-        background: 'var(--green-dark)',
-        color: 'var(--white)',
-        padding: '3.5rem 1.5rem',
-        textAlign: 'center',
-      }}>
-        <p className="section-label" style={{ color: 'var(--green-light)', marginBottom: '0.75rem' }}>
-          Crafted with care
-        </p>
-        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--white)' }}>Our Menu</h1>
+    <div style={{ minHeight: '100vh', background: 'var(--espresso)' }}>
+      {/* Page header */}
+      <section style={{ background: 'var(--espresso-mid)', padding: '4.5rem 1.5rem 3.5rem', textAlign: 'center', borderBottom: '1px solid rgba(200,169,110,0.08)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, rgba(200,169,110,0.07) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} style={{ position: 'relative', zIndex: 1 }}>
+          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(200,169,110,0.55)', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
+            Crafted with care
+          </p>
+          <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)', fontWeight: 300, fontStyle: 'italic', color: 'var(--cream-warm)', fontFamily: 'var(--font-display)', lineHeight: 1.1 }}>
+            Our Menu
+          </h1>
+        </motion.div>
       </section>
 
-      {/* Section nav */}
-      <div
-        ref={navRef}
-        style={{
-          background: 'var(--white)',
-          borderBottom: '1px solid var(--border)',
-          position: 'sticky',
-          top: 68,
-          zIndex: 10,
-          overflowX: 'auto',
-        }}
-      >
+      {/* Sticky category nav */}
+      <div ref={navRef} style={{ background: 'rgba(14,8,6,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(200,169,110,0.1)', position: 'sticky', top: 64, zIndex: 10, overflowX: 'auto' }}>
         <div className="container">
-          <div style={{ display: 'flex', gap: '0', padding: '0' }}>
+          <div style={{ display: 'flex', gap: 0, padding: 0 }}>
             {SECTIONS.map(({ key, label }) => {
               const hasItems = (grouped[key]?.length ?? 0) > 0
+              const active = activeSection === key
               return (
-                <button
-                  key={key}
-                  onClick={() => scrollTo(key)}
-                  disabled={!hasItems && !loading}
+                <button key={key} onClick={() => scrollTo(key)} disabled={!hasItems && !loading}
                   style={{
                     padding: '1rem 1.25rem',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: activeSection === key ? '2px solid var(--green-dark)' : '2px solid transparent',
-                    color: activeSection === key ? 'var(--green-dark)' : 'var(--text-muted)',
-                    fontWeight: activeSection === key ? 700 : 500,
-                    fontSize: '0.875rem',
-                    whiteSpace: 'nowrap',
-                    cursor: hasItems || loading ? 'pointer' : 'default',
-                    opacity: !hasItems && !loading ? 0.35 : 1,
-                    transition: 'color 0.15s, border-color 0.15s',
-                    letterSpacing: '0.01em',
-                  }}
-                >
+                    background: 'none', border: 'none',
+                    borderBottom: active ? '2px solid var(--amber)' : '2px solid transparent',
+                    color: active ? 'var(--amber)' : 'rgba(245,237,214,0.4)',
+                    fontWeight: active ? 700 : 500,
+                    fontSize: '0.78rem', whiteSpace: 'nowrap',
+                    cursor: hasItems || loading ? 'none' : 'default',
+                    opacity: !hasItems && !loading ? 0.25 : 1,
+                    transition: 'color 0.18s, border-color 0.18s',
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    fontFamily: 'var(--font-body)',
+                  }}>
                   {label}
                 </button>
               )
@@ -115,54 +95,33 @@ export default function Menu() {
         </div>
       </div>
 
-      {/* Sections */}
-      <div className="container" style={{ padding: '3rem 1.5rem 5rem' }}>
+      {/* Menu sections */}
+      <div className="container" style={{ padding: '3rem 1.5rem 6rem' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
-            <div className="spinner" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem' }}>
+            <div style={{ width: 28, height: 28, border: '2px solid rgba(200,169,110,0.2)', borderTopColor: 'var(--amber)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4.5rem' }}>
             {SECTIONS.filter(({ key }) => (grouped[key]?.length ?? 0) > 0).map(({ key, label }, sectionIdx) => (
-              <section
-                key={key}
-                id={key}
-                ref={(el) => { sectionRefs.current[key] = el }}
-              >
+              <section key={key} id={key} ref={el => { sectionRefs.current[key] = el }}>
                 {/* Section heading */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  marginBottom: '1.75rem',
-                }}>
-                  <h2 style={{
-                    fontSize: 'clamp(1.4rem, 2.5vw, 1.75rem)',
-                    color: 'var(--green-dark)',
-                    fontFamily: "'Playfair Display', Georgia, serif",
-                    whiteSpace: 'nowrap',
-                  }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
+                  <h2 style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', fontWeight: 300, fontStyle: 'italic', color: 'var(--cream-warm)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap' }}>
                     {label}
                   </h2>
-                  <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                  <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(200,169,110,0.25), transparent)' }} />
                 </div>
 
                 {/* Items grid */}
                 <motion.div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-                    gap: '1rem',
-                    perspective: 1000,
-                  }}
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '1.1rem', perspective: 1000 }}
                   initial="hidden"
                   whileInView="show"
                   viewport={{ once: true, margin: '-60px' }}
                   variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: sectionIdx * 0.02 } } }}
                 >
-                  {grouped[key].map((item) => (
-                    <MenuCard key={item.item_id} item={item} />
-                  ))}
+                  {grouped[key].map(item => <MenuCard key={item.item_id} item={item} />)}
                 </motion.div>
               </section>
             ))}
