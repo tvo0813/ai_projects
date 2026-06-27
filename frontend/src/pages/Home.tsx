@@ -735,9 +735,12 @@ export default function Home() {
       </section>
 
       {/* ═══ CHATBOT ════════════════════════════════════════════════════════ */}
-      <section className="luxury-section" style={{ padding: '0 1.5rem 7rem' }}>
-        <ChatBot />
-      </section>
+      {/* To re-enable: change `false` back to `true` */}
+      {false && (
+        <section className="luxury-section" style={{ padding: '0 1.5rem 7rem' }}>
+          <ChatBot />
+        </section>
+      )}
 
       {/* ═══ SIGNATURE DRINKS (drag gallery) ════════════════════════════════ */}
       {signatures.length > 0 && (

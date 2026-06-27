@@ -1,7 +1,66 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getMenuItems, type MenuItem } from '../api/menu'
 import MenuCard from '../components/menu/MenuCard'
+
+function ItemModal({ item, onClose }: { item: MenuItem; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(14,8,6,0.8)', backdropFilter: 'blur(10px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.88, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.88, y: 24 }}
+        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--espresso-card)', border: '1px solid rgba(200,169,110,0.14)', borderRadius: 'var(--radius-2xl)', maxWidth: 400, width: '100%', overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
+
+        <div style={{ height: 230, background: item.image_url ? `url(${item.image_url}) center/cover no-repeat` : 'linear-gradient(135deg, #2E1710, #0E0806)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {!item.image_url && (
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(200,169,110,0.2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/>
+            </svg>
+          )}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(14,8,6,0.85) 0%, transparent 50%)' }} />
+          <button onClick={onClose} aria-label="Close"
+            style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(14,8,6,0.65)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'none', backdropFilter: 'blur(6px)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,237,214,0.6)" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div style={{ padding: '1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, flex: 1, paddingRight: '1rem', color: 'var(--cream-warm)', fontFamily: 'var(--font-display)' }}>
+              {item.name}
+            </h3>
+            <span style={{ fontWeight: 700, color: 'var(--amber)', fontSize: '1.1rem', flexShrink: 0, fontFamily: 'var(--font-body)' }}>
+              ${item.price.toFixed(2)}
+            </span>
+          </div>
+
+          {item.description && (
+            <p style={{ fontSize: '0.875rem', color: 'rgba(245,237,214,0.5)', lineHeight: 1.7, fontFamily: 'var(--font-body)' }}>
+              {item.description}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1.1rem' }}>
+            {item.tags?.includes('popular') && (
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.22rem 0.6rem', borderRadius: 999, background: 'rgba(200,169,110,0.12)', color: 'var(--amber)', border: '1px solid rgba(200,169,110,0.25)', fontFamily: 'var(--font-body)' }}>Popular</span>
+            )}
+            {!item.is_available && (
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.22rem 0.6rem', borderRadius: 999, background: 'rgba(220,38,38,0.1)', color: '#f87171', border: '1px solid rgba(220,38,38,0.2)', fontFamily: 'var(--font-body)' }}>Unavailable</span>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 const SECTIONS: { key: string; label: string }[] = [
   { key: 'signature', label: 'Signature Drinks' },
@@ -16,6 +75,7 @@ export default function Menu() {
   const [items, setItems]           = useState<MenuItem[]>([])
   const [loading, setLoading]       = useState(true)
   const [activeSection, setActive]  = useState('signature')
+  const [selected, setSelected]     = useState<MenuItem | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const navRef      = useRef<HTMLDivElement>(null)
 
@@ -121,13 +181,19 @@ export default function Menu() {
                   viewport={{ once: true, margin: '-60px' }}
                   variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: sectionIdx * 0.02 } } }}
                 >
-                  {grouped[key].map(item => <MenuCard key={item.item_id} item={item} />)}
+                  {grouped[key].map(item => <MenuCard key={item.item_id} item={item} onOpen={setSelected} />)}
                 </motion.div>
               </section>
             ))}
           </div>
         )}
       </div>
+      {createPortal(
+        <AnimatePresence>
+          {selected && <ItemModal item={selected} onClose={() => setSelected(null)} />}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }
