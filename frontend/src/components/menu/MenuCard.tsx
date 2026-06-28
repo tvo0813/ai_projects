@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { MenuItem } from '../../api/menu'
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 interface Props { item: MenuItem; onOpen: (item: MenuItem) => void }
 
 export default function MenuCard({ item, onOpen }: Props) {
@@ -58,7 +60,7 @@ export default function MenuCard({ item, onOpen }: Props) {
         {/* Image circle */}
         <div style={{
           width: 120, height: 120, borderRadius: '50%',
-          background: item.image_url ? `url(${item.image_url}) center/cover no-repeat` : 'rgba(46,23,16,0.8)',
+          background: item.image_url ? `url(${item.image_url.startsWith('http') ? item.image_url : BASE + item.image_url}) center/cover no-repeat` : 'rgba(46,23,16,0.8)',
           flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', overflow: 'hidden',
           boxShadow: '0 8px 28px rgba(0,0,0,0.5)',
