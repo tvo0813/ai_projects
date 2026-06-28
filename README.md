@@ -373,13 +373,13 @@ The frontend on GitHub Pages uses `VITE_STATIC_MODE=true` and reads from bundled
 
 Go to repo → **Settings → Secrets → Actions**:
 
+These secrets live inside their GitHub environment (e.g. `phin_drips`), so the same name is reused per environment — no store suffix needed.
+
 | Secret | Value |
 |---|---|
-| `RENDER_API_KEY` | Render → Account Settings → API Keys |
-| `RENDER_SERVICE_ID_PHIN_DRIPS` | `srv-xxxxxxxx` from Render service URL |
-| `RENDER_DEPLOY_HOOK_PHIN_DRIPS` | Deploy hook URL from Render service settings |
-| `RENDER_SERVICE_ID_PHIN_AND_BEANS` | `srv-xxxxxxxx` for phin-and-beans service |
-| `RENDER_DEPLOY_HOOK_PHIN_AND_BEANS` | Deploy hook URL for phin-and-beans service |
+| `RENDER_API_KEY` | Render → Account Settings → API Keys (add to each environment) |
+| `RENDER_SERVICE_ID` | `srv-xxxxxxxx` from the Render service URL |
+| `RENDER_DEPLOY_HOOK` | Deploy hook URL from Render service settings |
 | `COFFEE_SHOP_SECRET_KEY` | Any random string (used by FastAPI internals) |
 
 **Step 3 — Push to `main`**
@@ -425,12 +425,14 @@ Both `deploy-frontend` and `deploy-backend` run in parallel after tests pass —
 | `RENDER_API_KEY` | All store CI/CD workflows — Render account API key |
 | `COFFEE_SHOP_SECRET_KEY` | All store CI/CD workflows — FastAPI internal secret |
 
-**Per-store (one set per store):**
+**Per-environment (same secret names, different values per GitHub environment):**
 
-| Secret | Phin Drips | Phin and Beans |
-|---|---|---|
-| Service ID | `RENDER_SERVICE_ID_PHIN_DRIPS` | `RENDER_SERVICE_ID_PHIN_AND_BEANS` |
-| Deploy Hook | `RENDER_DEPLOY_HOOK_PHIN_DRIPS` | `RENDER_DEPLOY_HOOK_PHIN_AND_BEANS` |
+| Secret | Where to add |
+|---|---|
+| `RENDER_API_KEY` | `phin_drips` environment + `phin_and_beans` environment |
+| `RENDER_SERVICE_ID` | `phin_drips` environment (phin-drips srv-xxx) · `phin_and_beans` environment (PAB srv-xxx) |
+| `RENDER_DEPLOY_HOOK` | `phin_drips` environment · `phin_and_beans` environment |
+| `COFFEE_SHOP_SECRET_KEY` | Both environments |
 
 **GitHub Pages (optional — only needed to override default store):**
 

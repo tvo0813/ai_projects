@@ -94,6 +94,7 @@ jobs:
     name: Deploy frontend to GitHub Pages
     runs-on: ubuntu-latest
     needs: unit-test
+    environment: phin_drips
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -144,20 +145,21 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────
   # JOB 3 — Deploy backend to Render (push to main only, after tests pass)
-  # Secrets needed in GitHub:
-  #   RENDER_API_KEY                 — Render account API key
-  #   RENDER_SERVICE_ID_PHIN_DRIPS   — srv-xxxxxxxx from Render service URL
-  #   RENDER_DEPLOY_HOOK_PHIN_DRIPS  — deploy hook URL from Render service settings
+  # Secrets needed in the phin_drips GitHub environment:
+  #   RENDER_API_KEY      — Render account API key
+  #   RENDER_SERVICE_ID   — srv-xxxxxxxx from Render service URL
+  #   RENDER_DEPLOY_HOOK  — deploy hook URL from Render service settings
   # ─────────────────────────────────────────────────────────────────────────
   deploy-backend:
     name: Deploy backend to Render
     runs-on: ubuntu-latest
     needs: unit-test
+    environment: phin_drips
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Push env vars to Render
         run: |
-          curl -fsSL -X PUT "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID_PHIN_DRIPS }}/env-vars" \
+          curl -fsSL -X PUT "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/env-vars" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '[
@@ -173,4 +175,4 @@ jobs:
 
       - name: Trigger Render deploy
         run: |
-          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PHIN_DRIPS }}"
+          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
