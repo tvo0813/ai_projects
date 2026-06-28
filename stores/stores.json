@@ -19,14 +19,4 @@
     "db_name_prod": "phin_drips",
     "env_prefix": "PD"
   }
-  ,{
-    "slug": "daboba",
-    "name": "Daboba",
-    "tagline": "Fresh boba, bold flavors, good vibes.",
-    "domain": "daboba.com",
-    "grab_url": "https://food.grab.com/your-daboba-listing",
-    "db_name_dev": "daboba_dev",
-    "db_name_prod": "daboba",
-    "env_prefix": "DB"
-  }
 ]

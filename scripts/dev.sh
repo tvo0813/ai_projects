@@ -19,7 +19,7 @@ done
 if [[ -z "$STORE" && "$CLEAN" == false && "$EXPOSE" == false ]]; then
   echo "Usage: ./scripts/dev.sh [--store=<store>] [--clean] [--expose]"
   echo ""
-  echo "  --store=<store>   Store to deploy (phin-and-beans, phin-drips, daboba)"
+  echo "  --store=<store>   Store to deploy (phin-and-beans, phin-drips)"
   echo "  --clean           Tear down store containers/volumes, or all Docker if no --store"
   echo "  --expose          Expose frontend via ngrok tunnel after deploy"
   echo ""
@@ -35,10 +35,9 @@ if [[ -n "$STORE" ]]; then
   case "$STORE" in
     phin-and-beans) ENV_FILE="stores/phin-and-beans.env"; FRONTEND_PORT=5173 ;;
     phin-drips)     ENV_FILE="stores/phin-drips.env";     FRONTEND_PORT=5174 ;;
-    daboba)         ENV_FILE="stores/daboba.env";          FRONTEND_PORT=5175 ;;
     *)
       echo "Unknown store: $STORE"
-      echo "Available stores: phin-and-beans, phin-drips, daboba"
+      echo "Available stores: phin-and-beans, phin-drips"
       exit 1
       ;;
   esac

@@ -61,28 +61,6 @@ const STORE_CONTENT: Record<string, StoreContent> = {
     ],
     marqueeItems: ['Da Lat Arabica', 'Buon Ma Thuot Robusta', 'Slow Drip · No Shortcuts', 'Black Over Ice', 'Coconut Cream Cold Brew', 'Vietnamese Highland Beans', 'Patience in a Cup', 'Bold Every Time'],
   },
-  'daboba': {
-    heroLabel: 'Fresh boba, bold flavors',
-    storyTitle: 'Where every sip is an adventure',
-    storyParagraphs: [
-      'Daboba started with a simple craving — boba that actually tastes like what it\'s made of. Real taro, real matcha, real fruit. Not powders, not syrups from a bag.',
-      'We hand-roll our tapioca pearls daily and cook them fresh every few hours. Our milk teas are brewed from loose-leaf tea, our fruit teas are made with real blended fruit.',
-      'Boba culture is joyful, social, and creative — and that\'s exactly the vibe we want every time you walk in.',
-    ],
-    pillars: [
-      { title: 'Real Ingredients Only', desc: 'Fresh taro, loose-leaf tea, real fruit — no artificial powders. You can taste the difference.', svgPath: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
-      { title: 'Pearls Made Daily', desc: 'Our tapioca pearls are hand-rolled and cooked fresh every few hours for that perfect chewy bite.', svgPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
-      { title: 'Your Drink, Your Way', desc: 'Adjust sweetness, ice level, milk type, and toppings. Every order is built for you, not the menu.', svgPath: 'M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3' },
-      { title: 'Good Vibes Only', desc: 'Daboba is a place to slow down, catch up, and treat yourself. Every visit should feel like a little celebration.', svgPath: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
-    ],
-    stats: [
-      { value: 5, suffix: '+', label: 'Years of craft' },
-      { value: 60, suffix: 'k', label: 'Boba cups served' },
-      { value: 30, suffix: '+', label: 'Menu items' },
-      { value: 100, suffix: '%', label: 'Fresh daily' },
-    ],
-    marqueeItems: ['Real Taro · No Powders', 'Loose Leaf Milk Tea', 'Hand-Rolled Pearls', 'Fresh Fruit Boba', 'Brown Sugar Tiger Milk', 'Matcha Latte Boba', 'Customizable Every Time', 'Chewy Perfection Daily'],
-  },
 }
 
 const DEFAULT_CONTENT = STORE_CONTENT['phin-and-beans']
