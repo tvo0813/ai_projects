@@ -15,6 +15,7 @@ on:
       - 'backend/menus/phin-drips/**'
       - 'scripts/generate-static-data.js'
       - 'docker-compose.yml'
+      - '.github/workflows/ci-cd-phin-drips.yml'
   push:
     branches: [main, develop]
     paths:
@@ -29,6 +30,7 @@ on:
       - 'backend/menus/phin-drips/**'
       - 'scripts/generate-static-data.js'
       - 'docker-compose.yml'
+      - '.github/workflows/ci-cd-phin-drips.yml'
   workflow_dispatch:
 
 concurrency:
