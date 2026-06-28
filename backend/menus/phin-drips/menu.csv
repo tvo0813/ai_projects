@@ -1,20 +1,20 @@
 item_id,name,category,description,price,image_url,is_available,tags,customizations
-,Ca Phe Trung,signature,Egg cream and cocoa powder topped over bold Vietnamese phin coffee — rich and velvety.,6.00,,true,iced|signature|popular|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Ca Phe Trung,signature,Egg cream and cocoa powder topped over bold Vietnamese phin coffee — rich and velvety.,6.00,/images/phin-drips/egg_cream_coffee.png,true,iced|signature|popular|coffee,sweetness=Less Sweet|Regular|Extra Sweet
 ,Pandan Cream Coffee,signature,Fragrant pandan cream over bold Vietnamese iced phin coffee.,6.00,,true,iced|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
-,Coconut Blended Coffee,signature,Ice-blended Vietnamese phin coffee with coconut milk and toasted coconut flakes.,6.00,,true,iced|blended|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
+,Coconut Blended Coffee,signature,Ice-blended Vietnamese phin coffee with coconut milk and toasted coconut flakes.,6.00,/images/phin-drips/coconut_blended_coffee.png,true,iced|blended|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
 ,Ube Cream Coffee,signature,Coconut ube purple yam cream over bold Vietnamese iced phin coffee.,6.00,,true,iced|signature|coffee,sweetness=Less Sweet|Regular|Extra Sweet
 ,Sesame Cream Coffee,signature,Black sesame cream and cocoa powder topped over bold Vietnamese iced coffee.,6.00,,true,iced|signature|nutty|coffee,sweetness=Less Sweet|Regular|Extra Sweet
 ,Sweet Cream Cold Brew,signature,Slow-steeped cold brew topped with our house sweet cream.,6.00,,true,iced|popular|coffee,sweetness=None|Less Sweet|Regular
 ,Ca Phe Sua Da,coffee,Classic Vietnamese iced phin drip coffee with condensed milk.,5.00,,true,iced|classic|popular,sweetness=Less Sweet|Regular|Extra Sweet
-,Cafe Latte,coffee,Bold phin drip shot blended with your choice of milk.,5.00,,true,iced|classic,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
-,Cold Brew,coffee,Slow-steeped pitch black cold brew — strong and smooth.,5.00,,true,iced|strong,sweetness=None|Less Sweet|Regular
+,Cafe Latte,coffee,Bold phin drip shot blended with your choice of milk.,5.00,/images/phin-drips/cafe_latte.png,true,iced|classic,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
+,Cold Brew,coffee,Slow-steeped pitch black cold brew — strong and smooth.,5.00,/images/phin-drips/cold_brew.png,true,iced|strong,sweetness=None|Less Sweet|Regular
 ,Coconut Cold Brew,coffee,Cold brew steeped with coconut water — smooth with a hint of coconut.,5.50,,true,iced|popular,sweetness=None|Less Sweet|Regular
 ,Matcha Latte,matcha,Ceremonial-grade matcha whisked with steamed milk — hot or iced.,5.50,,true,hot|iced|popular,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
 ,Iced Matcha,matcha,Shaken ceremonial matcha over ice with your choice of milk.,5.50,,true,iced|popular,milk=Whole|Oat|Almond|Coconut;sweetness=Less Sweet|Regular|Extra Sweet
 ,Matcha Cream Latte,matcha,Matcha cold cream floated over house sweet milk with a phin drip shot.,6.00,,true,iced|signature|matcha,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
 ,Pandan Latte,latte,Fragrant pandan cream over house sweet milk and a bold phin shot.,5.50,,true,iced|special,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
 ,Ube Latte,latte,Ube cream over phin drip coffee with fresh milk and simple syrup.,6.00,,true,iced|sweet,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
-,Banana Latte,latte,Banana cream with cinnamon powder over house sweet milk and a bold phin shot.,6.00,,true,iced|sweet,sweetness=Less Sweet|Regular|Extra Sweet
+,Banana Latte,latte,Banana cream with cinnamon powder over house sweet milk and a bold phin shot.,6.00,/images/phin-drips/banana_latte.png,true,iced|sweet,sweetness=Less Sweet|Regular|Extra Sweet
 ,Sesame Latte,latte,Black sesame cream over phin drip coffee with fresh milk and simple syrup.,6.00,,true,iced|nutty,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet
 ,Strawberry Cream Oat Latte,latte,Strawberry cream over oat milk and a phin drip shot — light and fruity.,6.00,,true,iced|fruity,sweetness=Less Sweet|Regular|Extra Sweet
 ,Jasmine Milk Tea,tea,Fragrant jasmine green tea with house milk.,5.00,,true,iced|floral,milk=Whole|Oat;sweetness=Less Sweet|Regular|Extra Sweet;pearls=Yes|No
