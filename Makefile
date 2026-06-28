@@ -1,13 +1,11 @@
-STORES := phin-and-beans phin-drips daboba
+STORES := phin-and-beans phin-drips
 
 # Port map per store
 port-phin-and-beans := 5173
 port-phin-drips     := 5174
-port-daboba         := 5175
 
 backend-port-phin-and-beans := 8000
 backend-port-phin-drips     := 8001
-backend-port-daboba         := 8002
 
 .DEFAULT_GOAL := help
 
@@ -17,11 +15,11 @@ help:
 	@echo ""
 	@echo "  Coffee & Tea App — Dev Commands"
 	@echo ""
-	@echo "  Per-store  (STORE= phin-and-beans | phin-drips | daboba)"
+	@echo "  Per-store  (STORE= phin-and-beans | phin-drips)"
 	@echo "  ──────────────────────────────────────────────────────────"
 	@echo "  make up    STORE=phin-and-beans    Start store (build if needed)"
 	@echo "  make down  STORE=phin-drips        Stop store, remove containers"
-	@echo "  make build STORE=daboba            Rebuild images without starting"
+	@echo "  make build STORE=phin-drips        Rebuild images without starting"
 	@echo "  make restart STORE=phin-and-beans  Rebuild + restart store"
 	@echo "  make logs  STORE=phin-drips        Tail all logs"
 	@echo "  make logs-web STORE=phin-drips     Tail frontend logs only"
@@ -54,7 +52,7 @@ help:
 # ── Guard: require STORE ──────────────────────────────────────────────────────
 _require-store:
 ifndef STORE
-	$(error STORE is required. Usage: make <target> STORE=<phin-and-beans|phin-drips|daboba>)
+	$(error STORE is required. Usage: make <target> STORE=<phin-and-beans|phin-drips>)
 endif
 ifeq ($(filter $(STORE),$(STORES)),)
 	$(error Unknown STORE "$(STORE)". Valid: $(STORES))
@@ -147,7 +145,6 @@ up-all:
 	@echo "✓  All stores running:"
 	@echo "   Phin and Beans → http://localhost:5173"
 	@echo "   Phin Drips     → http://localhost:5174"
-	@echo "   Daboba         → http://localhost:5175"
 
 .PHONY: down-all
 down-all:

@@ -1,8 +1,8 @@
 # Coffee Tea App
 
-Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multiple independent store deployments — each with its own domain, menu, and AWS infrastructure. Store identity is injected entirely through environment variables.
+Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multiple independent store deployments — each with its own domain and menu. Store identity is injected entirely through environment variables.
 
-**Active stores:** Phin and Beans (`phin-and-beans`) · Phin Drips (`phin-drips`) · Daboba (`daboba`)
+**Active stores:** Phin and Beans (`phin-and-beans`) · Phin Drips (`phin-drips`)
 
 > **Current state:** Public-facing showcase/menu site. No auth, login, admin, or database deployed. Customers browse the menu, view deals, find locations, order via Grab Food, and chat with a menu AI assistant.
 
@@ -12,13 +12,14 @@ Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multip
 |---|---|
 | Frontend | React 18 + Vite + TypeScript + Framer Motion |
 | Backend | Python FastAPI + Uvicorn |
-| Data | Per-store CSVs in `backend/menus/<slug>/` (dev) · DynamoDB (prod) |
+| Data | Per-store CSVs in `backend/menus/<slug>/` |
 | Payments | Stripe (configured, not in active UI) |
 | POS Sync | Square (configured, not in active UI) |
 | Maps | Google Maps Embed API (keyed) with legacy fallback |
 | Menu Chatbot | Ollama (`llama3.2:1b`) — runs locally in Docker, no API costs |
-| Infrastructure | AWS ECS Fargate + S3/CloudFront, Terraform |
-| CI/CD | GitHub Actions (per-store path-filtered workflows + GitHub Pages static deploy) |
+| Backend Hosting | Render (free tier, per-store Docker service) |
+| Frontend Hosting | GitHub Pages (free static deploy, `VITE_STATIC_MODE=true`) |
+| CI/CD | GitHub Actions (per-store path-filtered workflows) |
 
 ---
 
@@ -30,7 +31,7 @@ Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multip
 4. [Pages & Features](#pages--features)
 5. [Frontend Design System](#frontend-design-system)
 6. [GitHub Pages (Free Static Deploy)](#github-pages-free-static-deploy)
-7. [First-Time AWS Deployment](#first-time-aws-deployment)
+7. [Backend Deployment (Render)](#backend-deployment-render)
 8. [What the CI/CD Pipeline Does Automatically](#what-the-cicd-pipeline-does-automatically)
 9. [GitHub Secrets Reference](#github-secrets-reference)
 10. [Deployment Troubleshooting](#deployment-troubleshooting)
@@ -339,126 +340,128 @@ git push origin main   # triggers re-deploy
 
 ---
 
-## First-Time AWS Deployment
+## Backend Deployment (Render)
 
-This is everything you must do **once before your first push**. After this, CI/CD handles everything.
+Each store's FastAPI backend runs as a separate free Render service, deployed automatically on push to `main`.
 
-### Step 1 — AWS IAM user for GitHub Actions
+### How it works
 
-1. Go to **AWS Console → IAM → Users → Create user**
-2. Name: `coffee-tea-app-github-actions`
-3. Attach the policy from `terraform/github-actions-iam-policy.json`
-4. Create access key → save `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-
-### Step 2 — Bootstrap Terraform remote state
-
-```bash
-bash terraform/bootstrap.sh
+```
+push to main
+  ├── gh-pages.yml        → frontend → GitHub Pages (static, no backend needed)
+  └── ci-cd-<store>.yml
+        ├── unit tests pass?
+        ├── frontend builds? (sanity check)
+        └── ✓ both pass → push env vars to Render → trigger deploy
 ```
 
-Creates S3 bucket `coffee-tea-app-tfstate` + DynamoDB lock table.
+The frontend on GitHub Pages uses `VITE_STATIC_MODE=true` and reads from bundled JSON files — it never calls the backend. The Render backend is live and ready for when you connect a live frontend.
 
-### Step 3 — Create the ECR repository
+### One-time setup per store
 
-```bash
-aws ecr create-repository --repository-name coffee-tea-api --region us-east-2
-```
+**Step 1 — Create a Render service**
 
-Save the `repositoryUri` as your `ECR_REPO` GitHub variable.
+1. Go to [render.com](https://render.com) → sign up with GitHub
+2. **New → Web Service** → connect your repo
+3. Configure:
 
-### Step 4 — Request ACM certificates (prod only)
+| Field | Value |
+|---|---|
+| Root Directory | `backend` |
+| Runtime | `Docker` |
+| Branch | `main` |
+| Auto-Deploy | off (GitHub Actions handles this) |
 
-CloudFront requires SSL certificates in **us-east-1**.
+4. Copy the **Deploy Hook URL** from Settings → Deploy Hook
+5. Copy the **Service ID** (`srv-xxxxxxxx`) from the service URL
 
-For each store domain: Certificate Manager → us-east-1 → Request public certificate → DNS validation → save the Certificate ARN as `PROD_{PREFIX}_ACM_CERT_ARN`.
+**Step 2 — Add GitHub Secrets**
 
-### Step 5 — Set up Ollama for prod
+Go to repo → **Settings → Secrets → Actions**:
 
-1. Launch EC2 (`t3.medium` minimum) in the same region as ECS
-2. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh && ollama pull llama3.2:1b`
-3. Enable on boot: `sudo systemctl enable ollama`
-4. Allow TCP 11434 inbound from the ECS security group
-5. Save `http://<private-ip>:11434` as `OLLAMA_BASE_URL`
+| Secret | Value |
+|---|---|
+| `RENDER_API_KEY` | Render → Account Settings → API Keys |
+| `RENDER_SERVICE_ID_PHIN_DRIPS` | `srv-xxxxxxxx` from Render service URL |
+| `RENDER_DEPLOY_HOOK_PHIN_DRIPS` | Deploy hook URL from Render service settings |
+| `RENDER_SERVICE_ID_PHIN_AND_BEANS` | `srv-xxxxxxxx` for phin-and-beans service |
+| `RENDER_DEPLOY_HOOK_PHIN_AND_BEANS` | Deploy hook URL for phin-and-beans service |
+| `COFFEE_SHOP_SECRET_KEY` | Any random string (used by FastAPI internals) |
 
-### Step 6 — Add GitHub Secrets and Variables
-
-**Variables:** `ECR_REPO`
-
-**Shared secrets:** `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GOOGLE_MAPS_API_KEY`
-
-**Per-store secrets** (pattern: `{ENV}_{PREFIX}_{VAR}`):
-`SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `OLLAMA_BASE_URL`, `ACM_CERT_ARN` (prod only)
-
-Store prefixes: `PAB` (Phin and Beans), `PD` (Phin Drips), `DB` (Daboba)
-
-### Step 7 — Create GitHub Environments
-
-Settings → Environments:
-1. **`dev`** — no protection rules
-2. **`prod`** — enable Required reviewers (manual approval gate)
-
-### Step 8 — Push to trigger first deploy
+**Step 3 — Push to `main`**
 
 ```bash
 git push origin main
 ```
 
-First run provisions all AWS infrastructure — expect 10–15 minutes.
+The workflow pushes all env vars to Render via the API, then triggers the deploy. Render builds the Docker image and starts the service.
+
+> **Note:** Render free tier spins down after 15 min of inactivity — first request after idle has a ~30s cold start. Fine for a demo/portfolio site.
 
 ---
 
 ## What the CI/CD Pipeline Does Automatically
 
-Three workflow files — one per store, path-filtered:
+Three workflow files — one per store, path-filtered. Each only triggers when files relevant to that store change.
 
 ```
-push to main
+push to main (or PR)
     │
-    ├─ build-backend    Docker image → ECR
-    ├─ build-frontend   Vite build (bakes store env vars) → artifact
-    ├─ unit-test        pytest
+    ├─ unit-test        pytest (backend)
+    ├─ build-frontend   Vite build sanity check (bakes store env vars)
     │
-    ▼
-    ├─ deploy-dev       terraform apply + ECS rolling deploy + S3/CloudFront sync
-    ├─ e2e              Playwright tests against live dev URL
-    │
-    ▼ (manual approval)
-    └─ deploy-prod      same as deploy-dev against prod environment
+    ▼ (push to main only, both jobs must pass)
+    └─ deploy-backend   push env vars to Render → trigger Render deploy
+
+push to main (any frontend/data change)
+    └─ gh-pages.yml     CSV → JSON → Vite static build → GitHub Pages
 ```
+
+**Workflow files:**
+- `.github/workflows/gh-pages.yml` — frontend → GitHub Pages
+- `.github/workflows/ci-cd-phin-drips.yml` — backend → Render (phin-drips)
+- `.github/workflows/ci-cd-phin-and-beans.yml` — backend → Render (phin-and-beans)
 
 ---
 
 ## GitHub Secrets Reference
 
-Pattern: `{ENV}_{PREFIX}_{VAR}`
+**Shared (one for all stores):**
 
-| Part | Values |
+| Secret | Used by |
 |---|---|
-| `ENV` | `DEV` or `PROD` |
-| `PREFIX` | `PAB`, `PD`, `DB` |
-| `VAR` | `SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, `OLLAMA_BASE_URL` |
+| `RENDER_API_KEY` | All store CI/CD workflows — Render account API key |
+| `COFFEE_SHOP_SECRET_KEY` | All store CI/CD workflows — FastAPI internal secret |
 
-Prod-only: `PROD_{PREFIX}_ACM_CERT_ARN`
+**Per-store (one set per store):**
 
-Shared: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GOOGLE_MAPS_API_KEY`
+| Secret | Phin Drips | Phin and Beans |
+|---|---|---|
+| Service ID | `RENDER_SERVICE_ID_PHIN_DRIPS` | `RENDER_SERVICE_ID_PHIN_AND_BEANS` |
+| Deploy Hook | `RENDER_DEPLOY_HOOK_PHIN_DRIPS` | `RENDER_DEPLOY_HOOK_PHIN_AND_BEANS` |
 
-Variable (not secret): `ECR_REPO`
+**GitHub Pages (optional — only needed to override default store):**
+
+| Variable | Purpose |
+|---|---|
+| `VITE_STORE_SLUG` | Which store to deploy to GitHub Pages |
+| `VITE_STORE_NAME` | Store display name |
+| `VITE_STORE_TAGLINE` | Store tagline |
+| `VITE_GRAB_URL` | Grab Food order link |
 
 ---
 
 ## Deployment Troubleshooting
 
-### Terraform / AWS
+### Render
 
-**`NoSuchBucket` on state backend** — run `bash terraform/bootstrap.sh`
+**Deploy triggered but service still running old code** — check Render dashboard logs; the free tier may be cold-starting (~30s). Wait for the build to complete under the "Deploys" tab.
 
-**`InvalidClientTokenId`** — AWS secret wrong or has whitespace, re-add both secrets
+**`curl: (22)` in GitHub Actions deploy step** — `RENDER_API_KEY`, `RENDER_SERVICE_ID_*`, or `RENDER_DEPLOY_HOOK_*` secret is wrong or missing. Verify all three are set in repo Settings → Secrets.
 
-**`RepositoryNotFoundException`** — create ECR repo (Step 3) or fix `ECR_REPO` variable
+**Env vars not updated on Render** — the `PUT /env-vars` call replaces all env vars; if it fails the deploy still triggers with old vars. Check the "Push env vars" step output in the Actions log.
 
-**ECS task stuck in PENDING** — check CloudWatch logs (`/ecs/<store>-dev-api`), confirm all Secrets Manager keys exist
-
-**`exec format error` in ECS** — image built on Apple Silicon; add `--platform linux/amd64` to Docker build
+**Service crashes on startup** — check Render logs. Most likely a missing env var — `STORE_SLUG` must match a directory under `backend/menus/`.
 
 ### GitHub Pages
 

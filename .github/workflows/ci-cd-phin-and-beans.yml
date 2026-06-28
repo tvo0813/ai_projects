@@ -13,8 +13,6 @@ on:
       - 'frontend/vite.config.ts'
       - 'frontend/index.html'
       - 'backend/menus/phin-and-beans/**'
-      - 'stores/phin-and-beans.env'
-      - 'terraform/envs/phin-and-beans/**'
       - 'docker-compose.yml'
   push:
     branches: [main, develop]
@@ -28,104 +26,32 @@ on:
       - 'frontend/vite.config.ts'
       - 'frontend/index.html'
       - 'backend/menus/phin-and-beans/**'
-      - 'stores/phin-and-beans.env'
-      - 'terraform/envs/phin-and-beans/**'
       - 'docker-compose.yml'
 
 concurrency:
   group: phin-and-beans-${{ github.ref }}
   cancel-in-progress: true
 
+# ─────────────────────────────────────────────────────────────────────────────
+# All store values mirror stores/phin-and-beans.env (which is gitignored).
+# RENDER_DOMAIN is the onrender.com URL assigned when you created the service.
+# ─────────────────────────────────────────────────────────────────────────────
 env:
-  AWS_REGION_DEV:  us-east-2
-  AWS_REGION_PROD: us-east-1
-  ECR_REPO: ${{ vars.ECR_REPO }}
-  STORE_SLUG: phin-and-beans
-  STORE_NAME: "Phin and Beans"
+  STORE_SLUG:    phin-and-beans
+  STORE_NAME:    "Phin and Beans"
   STORE_TAGLINE: "Vietnamese-inspired coffee & tea, crafted with care."
-  GRAB_URL: "https://food.grab.com/your-phin-and-beans-listing"
+  GRAB_URL:      "https://food.grab.com/your-phin-and-beans-listing"
+  OLLAMA_MODEL:  llama3.2:1b
+  RENDER_DOMAIN: phin-and-beans.onrender.com
+  SECRET_KEY:    ${{ secrets.COFFEE_SHOP_SECRET_KEY }}
 
-# ─────────────────────────────────────────────────────────────────────────────
-# JOB 1 — Build & push backend image (shared image, per-commit tag)
-# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  build-backend:
-    name: Build backend
-    runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
-      image_uri: ${{ steps.meta.outputs.image_uri }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION_DEV }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set image tag
-        id: meta
-        run: |
-          TAG=${{ github.sha }}
-          echo "image_tag=${TAG}"                       >> "$GITHUB_OUTPUT"
-          echo "image_uri=${{ env.ECR_REPO }}:${TAG}"  >> "$GITHUB_OUTPUT"
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ env.ECR_REPO }}:${{ steps.meta.outputs.image_tag }}
-            ${{ env.ECR_REPO }}:latest
-          cache-from: type=registry,ref=${{ env.ECR_REPO }}:latest
-          cache-to:   type=inline
-
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Build frontend
-  # ─────────────────────────────────────────────────────────────────────────
-  build-frontend:
-    name: Build frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package.json
-
-      - name: Build frontend
-        working-directory: frontend
-        env:
-          VITE_STORE_NAME:    ${{ env.STORE_NAME }}
-          VITE_STORE_SLUG:    ${{ env.STORE_SLUG }}
-          VITE_STORE_TAGLINE: ${{ env.STORE_TAGLINE }}
-          VITE_GRAB_URL:      ${{ env.GRAB_URL }}
-        run: |
-          npm ci
-          npm run build
-
-      - name: Upload frontend dist
-        uses: actions/upload-artifact@v4
-        with:
-          name:           frontend-dist-phin-and-beans
-          path:           frontend/dist
-          retention-days: 1
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # JOB 3 — Backend unit tests
+  # JOB 1 — Backend unit tests
   # ─────────────────────────────────────────────────────────────────────────
   unit-test:
     name: Unit tests
     runs-on: ubuntu-latest
-    needs: build-backend
     defaults:
       run:
         working-directory: backend
@@ -142,8 +68,8 @@ jobs:
 
       - name: Run pytest
         env:
-          STORE_NAME:   "Test Store"
-          SECRET_KEY:   "test-secret-key"
+          STORE_NAME: "Test Store"
+          SECRET_KEY: "test-secret-key"
         run: pytest --tb=short -q
 
       - name: Upload test results
@@ -154,220 +80,60 @@ jobs:
           path: backend/.pytest_cache
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 4 — Deploy dev
+  # JOB 2 — Build frontend (validates the build compiles cleanly)
   # ─────────────────────────────────────────────────────────────────────────
-  deploy-dev:
-    name: Deploy dev
+  build-frontend:
+    name: Build frontend
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend, unit-test]
-    environment: dev
     steps:
       - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION_DEV }}
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.5"
-
-      - name: Terraform init
-        working-directory: terraform/envs/phin-and-beans/dev
-        run: terraform init
-
-      - name: Terraform apply
-        working-directory: terraform/envs/phin-and-beans/dev
-        env:
-          TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_secret_key:            ${{ secrets.DEV_PAB_SECRET_KEY }}
-          TF_VAR_stripe_secret_key:     ${{ secrets.DEV_PAB_STRIPE_SECRET_KEY }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets.DEV_PAB_STRIPE_WEBHOOK_SECRET }}
-          TF_VAR_square_access_token:   ${{ secrets.DEV_PAB_SQUARE_ACCESS_TOKEN }}
-          TF_VAR_square_location_id:    ${{ secrets.DEV_PAB_SQUARE_LOCATION_ID }}
-          TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          TF_VAR_ollama_base_url:       ${{ secrets.DEV_PAB_OLLAMA_BASE_URL }}
-          TF_VAR_ollama_model:          llama3.2:1b
-        run: terraform apply -auto-approve
-
-      - name: Get Terraform outputs
-        id: tf-out
-        working-directory: terraform/envs/phin-and-beans/dev
-        run: |
-          echo "backend_url=$(terraform output -raw backend_url)"           >> "$GITHUB_OUTPUT"
-          echo "frontend_url=$(terraform output -raw frontend_url)"         >> "$GITHUB_OUTPUT"
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"      >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
-          echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
-
-      - name: Force new ECS deployment
-        run: |
-          aws ecs update-service \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --service ${{ steps.tf-out.outputs.ecs_service }} \
-            --force-new-deployment \
-            --region ${{ env.AWS_REGION_DEV }}
-          aws ecs wait services-stable \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ env.AWS_REGION_DEV }}
-
-      - name: Download frontend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist-phin-and-beans
-          path: frontend/dist
-
-      - name: Deploy frontend to S3 + invalidate CloudFront
-        run: |
-          aws s3 sync frontend/dist/ s3://${{ steps.tf-out.outputs.frontend_bucket }}/ \
-            --delete \
-            --cache-control "public,max-age=31536000,immutable" \
-            --exclude "index.html"
-          aws s3 cp frontend/dist/index.html \
-            s3://${{ steps.tf-out.outputs.frontend_bucket }}/index.html \
-            --cache-control "no-cache,no-store,must-revalidate"
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.tf-out.outputs.cf_dist }} \
-            --paths "/*"
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # JOB 5 — E2E tests
-  # ─────────────────────────────────────────────────────────────────────────
-  e2e:
-    name: E2E tests
-    runs-on: ubuntu-latest
-    needs: deploy-dev
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION_DEV }}
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.5"
-
-      - name: Get store URLs
-        id: urls
-        working-directory: terraform/envs/phin-and-beans/dev
-        run: |
-          terraform init -reconfigure
-          echo "backend_url=$(terraform output -raw backend_url)"   >> "$GITHUB_OUTPUT"
-          echo "frontend_url=$(terraform output -raw frontend_url)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: tests/e2e/package.json
+          cache-dependency-path: frontend/package.json
 
-      - name: Install Playwright
-        working-directory: tests/e2e
-        run: npm ci && npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        working-directory: tests/e2e
+      - name: Build frontend
+        working-directory: frontend
         env:
-          E2E_FRONTEND_URL: ${{ steps.urls.outputs.frontend_url }}
-          E2E_API_URL:      ${{ steps.urls.outputs.backend_url }}
-          E2E_STORE_SLUG:   phin-and-beans
-        run: npm test
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name:            playwright-report-phin-and-beans
-          path:            tests/e2e/playwright-report
-          retention-days:  7
+          VITE_STORE_SLUG:    ${{ env.STORE_SLUG }}
+          VITE_STORE_NAME:    ${{ env.STORE_NAME }}
+          VITE_STORE_TAGLINE: ${{ env.STORE_TAGLINE }}
+          VITE_GRAB_URL:      ${{ env.GRAB_URL }}
+        run: |
+          npm ci
+          npm run build
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 6 — Deploy prod (push to main only, manual approval gate)
+  # JOB 3 — Deploy backend to Render (push to main only, after tests pass)
+  # Secrets needed in GitHub:
+  #   RENDER_API_KEY                    — Render account API key
+  #   RENDER_SERVICE_ID_PHIN_AND_BEANS  — srv-xxxxxxxx from Render service URL
+  #   RENDER_DEPLOY_HOOK_PHIN_AND_BEANS — deploy hook URL from Render service settings
   # ─────────────────────────────────────────────────────────────────────────
-  deploy-prod:
-    name: Deploy prod
+  deploy-backend:
+    name: Deploy backend to Render
     runs-on: ubuntu-latest
-    needs: e2e
+    needs: [unit-test, build-frontend]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: prod
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION_PROD }}
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.5"
-
-      - name: Terraform init
-        working-directory: terraform/envs/phin-and-beans/prod
-        run: terraform init
-
-      - name: Terraform apply
-        working-directory: terraform/envs/phin-and-beans/prod
-        env:
-          TF_VAR_backend_image:         ${{ needs.build-backend.outputs.image_uri }}
-          TF_VAR_secret_key:            ${{ secrets.PROD_PAB_SECRET_KEY }}
-          TF_VAR_stripe_secret_key:     ${{ secrets.PROD_PAB_STRIPE_SECRET_KEY }}
-          TF_VAR_stripe_webhook_secret: ${{ secrets.PROD_PAB_STRIPE_WEBHOOK_SECRET }}
-          TF_VAR_square_access_token:   ${{ secrets.PROD_PAB_SQUARE_ACCESS_TOKEN }}
-          TF_VAR_square_location_id:    ${{ secrets.PROD_PAB_SQUARE_LOCATION_ID }}
-          TF_VAR_google_maps_api_key:   ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          TF_VAR_acm_certificate_arn:   ${{ secrets.PROD_PAB_ACM_CERT_ARN }}
-          TF_VAR_ollama_base_url:       ${{ secrets.PROD_PAB_OLLAMA_BASE_URL }}
-          TF_VAR_ollama_model:          llama3.2:1b
-        run: terraform apply -auto-approve
-
-      - name: Get Terraform outputs
-        id: tf-out
-        working-directory: terraform/envs/phin-and-beans/prod
+      - name: Push env vars to Render
         run: |
-          echo "ecs_cluster=$(terraform output -raw ecs_cluster_name)"      >> "$GITHUB_OUTPUT"
-          echo "ecs_service=$(terraform output -raw ecs_service_name)"      >> "$GITHUB_OUTPUT"
-          echo "cf_dist=$(terraform output -raw cf_distribution_id)"        >> "$GITHUB_OUTPUT"
-          echo "frontend_bucket=$(terraform output -raw frontend_bucket)"   >> "$GITHUB_OUTPUT"
+          curl -fsSL -X PUT "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID_PHIN_AND_BEANS }}/env-vars" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '[
+              {"key": "STORE_SLUG",      "value": "${{ env.STORE_SLUG }}"},
+              {"key": "STORE_NAME",      "value": "${{ env.STORE_NAME }}"},
+              {"key": "STORE_TAGLINE",   "value": "${{ env.STORE_TAGLINE }}"},
+              {"key": "STORE_DOMAIN",    "value": "${{ env.RENDER_DOMAIN }}"},
+              {"key": "SECRET_KEY",      "value": "${{ env.SECRET_KEY }}"},
+              {"key": "ENVIRONMENT",     "value": "production"},
+              {"key": "OLLAMA_BASE_URL", "value": "http://localhost:11434"},
+              {"key": "OLLAMA_MODEL",    "value": "${{ env.OLLAMA_MODEL }}"}
+            ]'
 
-      - name: Force new ECS deployment
+      - name: Trigger Render deploy
         run: |
-          aws ecs update-service \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --service ${{ steps.tf-out.outputs.ecs_service }} \
-            --force-new-deployment \
-            --region ${{ env.AWS_REGION_PROD }}
-          aws ecs wait services-stable \
-            --cluster ${{ steps.tf-out.outputs.ecs_cluster }} \
-            --services ${{ steps.tf-out.outputs.ecs_service }} \
-            --region ${{ env.AWS_REGION_PROD }}
-
-      - name: Download frontend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist-phin-and-beans
-          path: frontend/dist
-
-      - name: Deploy frontend to S3 + invalidate CloudFront
-        run: |
-          aws s3 sync frontend/dist/ s3://${{ steps.tf-out.outputs.frontend_bucket }}/ \
-            --delete \
-            --cache-control "public,max-age=31536000,immutable" \
-            --exclude "index.html"
-          aws s3 cp frontend/dist/index.html \
-            s3://${{ steps.tf-out.outputs.frontend_bucket }}/index.html \
-            --cache-control "no-cache,no-store,must-revalidate"
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.tf-out.outputs.cf_dist }} \
-            --paths "/*"
+          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PHIN_AND_BEANS }}"

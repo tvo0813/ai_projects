@@ -37,7 +37,6 @@ const SOCIAL = [
 const STORE_TAGLINES: Record<string, string> = {
   'phin-and-beans': 'Vietnamese-inspired craft coffee, made slow and served with heart.',
   'phin-drips':     'The Central Highlands in every cup. Slow drip, bold character.',
-  'daboba':         'Real ingredients, hand-rolled pearls, and drinks made entirely for you.',
 }
 
 export default function Footer() {

@@ -1,11 +1,9 @@
 # Usage (run each in its own terminal):
 #   docker compose --env-file stores/phin-and-beans.env -p phin-and-beans up
 #   docker compose --env-file stores/phin-drips.env     -p phin-drips     up
-#   docker compose --env-file stores/daboba.env         -p daboba         up
 #
-# Phin and Beans: frontend :5173  backend :8000  db :5432
-# Phin Drips:     frontend :5174  backend :8001  db :5433
-# Daboba:         frontend :5175  backend :8002  db :5434
+# Phin and Beans: frontend :5173  backend :8000
+# Phin Drips:     frontend :5174  backend :8001
 
 services:
   ollama:
