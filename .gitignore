@@ -1,32 +1,89 @@
-# Python
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .venv/
 venv/
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
 test.db
 
-# Node
+# ── Node ─────────────────────────────────────────────────────────────────────
 node_modules/
 dist/
 .next/
+.nuxt/
+.output/
+*.tsbuildinfo
 
-# Env files — never commit secrets
+# ── Vite / build artifacts ───────────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+
+# ── Env / secrets — never commit ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
 backend/.env
 frontend/.env
 stores/*.env
 *.env.local
+*.env.production
 
-# Terraform state — stored remotely in S3
+# ── Terraform ────────────────────────────────────────────────────────────────
 **/.terraform/
+**/.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 *.tfvars
 !*.tfvars.example
+terraform/.terraform/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
-# IDE
+# ── IDE & OS ──────────────────────────────────────────────────────────────────
 .DS_Store
+**/.DS_Store
 .idea/
 .vscode/
+*.swp
+*.swo
+*.orig
+Thumbs.db
+
+# ── Testing & tooling artifacts ───────────────────────────────────────────────
+.playwright-mcp/
+playwright-report/
+test-results/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+.dockerignore.local
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+.cache/
+tmp/
+temp/
+.playwright-mcp/*
+
