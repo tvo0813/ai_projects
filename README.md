@@ -50,19 +50,17 @@ Multi-store Vietnamese-inspired coffee & tea shop platform. One codebase, multip
 
 ### Run with Docker (recommended)
 
-All three stores can run simultaneously — each in its own terminal:
+Both stores can run simultaneously — each in its own terminal:
 
 ```bash
 docker compose --env-file stores/phin-and-beans.env -p phin-and-beans up
 docker compose --env-file stores/phin-drips.env     -p phin-drips     up
-docker compose --env-file stores/daboba.env          -p daboba          up
 ```
 
 | Store | Frontend | Backend API | Swagger |
 |---|---|---|---|
 | Phin and Beans | http://localhost:5173 | http://localhost:8000 | http://localhost:8000/api/docs |
 | Phin Drips | http://localhost:5174 | http://localhost:8001 | http://localhost:8001/api/docs |
-| Daboba | http://localhost:5175 | http://localhost:8002 | http://localhost:8002/api/docs |
 
 > **First startup:** Ollama pulls `llama3.2:1b` (~1.3 GB) automatically. Subsequent starts are instant — the model is cached in the `ollama_models` Docker volume.
 
@@ -104,7 +102,7 @@ A `Makefile` at the repo root wraps all common operations.
 ```bash
 make up      STORE=phin-and-beans   # build + start
 make down    STORE=phin-drips       # stop containers
-make restart STORE=daboba           # rebuild + restart
+make restart STORE=phin-and-beans   # rebuild + restart
 make build   STORE=phin-and-beans   # rebuild images only
 make logs    STORE=phin-drips       # tail all logs
 make logs-web STORE=phin-drips      # frontend logs only
@@ -118,10 +116,10 @@ make expose  STORE=phin-and-beans   # ngrok public tunnel
 ### All stores at once
 
 ```bash
-make up-all      # spin up all 3
-make down-all    # stop all 3
-make clean-all   # full teardown all 3
-make ps-all      # container status all 3
+make up-all      # spin up both stores
+make down-all    # stop both stores
+make clean-all   # full teardown both stores
+make ps-all      # container status both stores
 make status      # health check — shows ✓/✗ per store with ports
 ```
 
@@ -197,9 +195,7 @@ terraform/envs/
 ├── phin-and-beans/dev/   VPC: 10.0.0.0/16
 ├── phin-and-beans/prod/  VPC: 10.1.0.0/16
 ├── phin-drips/dev/       VPC: 10.2.0.0/16
-├── phin-drips/prod/      VPC: 10.3.0.0/16
-├── daboba/dev/           VPC: 10.4.0.0/16
-└── daboba/prod/          VPC: 10.5.0.0/16
+└── phin-drips/prod/      VPC: 10.3.0.0/16
 ```
 
 Shared state: S3 `coffee-tea-app-tfstate` + DynamoDB lock `coffee-tea-app-tfstate-lock`.
@@ -297,30 +293,27 @@ Deploy any store as a fully static site — no backend, no Docker, no cost.
 2. Vite builds with `VITE_STATIC_MODE=true` — API calls read the JSON files, chatbot shows offline card
 3. GitHub Actions deploys `frontend/dist/` to GitHub Pages automatically on every push to `main`
 
-### Workflow file
+### Workflow
 
-`.github/workflows/gh-pages.yml` — triggers on pushes to `main` that touch `frontend/`, `backend/menus/`, or the workflow itself.
+GitHub Pages deployment is handled inside the per-store CI/CD workflow — there is no separate `gh-pages.yml`. The `deploy-frontend` job in `ci-cd-phin-drips.yml` owns the active Pages deploy.
+
+**Currently deploying:** Phin Drips
 
 ### Setup (one-time)
 
 1. Go to your repo → **Settings → Pages → Source → GitHub Actions**
-2. Push to `main` — the workflow fires automatically
+2. Push to `main` — the `deploy-frontend` job fires automatically after tests pass
 
 Your site: `https://<your-username>.github.io/<repo-name>`
 
-### Choose which store to deploy
+### Switch which store deploys to GitHub Pages
 
-**Option A — GitHub repo variables (no code change needed):**
-Settings → Variables → Actions → add:
+GitHub Pages supports only one active deployment per repo. To swap stores:
 
-| Variable | Value |
-|---|---|
-| `VITE_STORE_SLUG` | `phin-drips` |
-| `VITE_STORE_NAME` | `Phin Drips` |
-| `VITE_STORE_TAGLINE` | `Bold Vietnamese drip coffee, your way.` |
-| `VITE_GRAB_URL` | your Grab URL |
+1. In `ci-cd-phin-drips.yml` — comment out the `deploy-frontend` job
+2. In `ci-cd-phin-and-beans.yml` — uncomment the `deploy-frontend` job
 
-**Option B — Change defaults in the workflow file** (`gh-pages.yml` build step env vars).
+The `env` block at the top of each file already has the correct store values, so no other changes are needed.
 
 ### Local static preview
 
@@ -348,11 +341,12 @@ Each store's FastAPI backend runs as a separate free Render service, deployed au
 
 ```
 push to main
-  ├── gh-pages.yml        → frontend → GitHub Pages (static, no backend needed)
   └── ci-cd-<store>.yml
         ├── unit tests pass?
-        ├── frontend builds? (sanity check)
-        └── ✓ both pass → push env vars to Render → trigger deploy
+        │
+        ▼ (both deploy jobs wait for tests)
+        ├── deploy-frontend  → CSV → JSON → Vite static build → GitHub Pages
+        └── deploy-backend   → push env vars to Render → trigger Render deploy
 ```
 
 The frontend on GitHub Pages uses `VITE_STATIC_MODE=true` and reads from bundled JSON files — it never calls the backend. The Render backend is live and ready for when you connect a live frontend.
@@ -402,25 +396,23 @@ The workflow pushes all env vars to Render via the API, then triggers the deploy
 
 ## What the CI/CD Pipeline Does Automatically
 
-Three workflow files — one per store, path-filtered. Each only triggers when files relevant to that store change.
+Two workflow files — one per store, path-filtered. Each only triggers when files relevant to that store change.
 
 ```
 push to main (or PR)
     │
-    ├─ unit-test        pytest (backend)
-    ├─ build-frontend   Vite build sanity check (bakes store env vars)
-    │
-    ▼ (push to main only, both jobs must pass)
-    └─ deploy-backend   push env vars to Render → trigger Render deploy
+    └─ unit-test           pytest (backend)
 
-push to main (any frontend/data change)
-    └─ gh-pages.yml     CSV → JSON → Vite static build → GitHub Pages
+    ▼ (push to main only, after tests pass)
+    ├─ deploy-frontend     CSV → JSON → Vite static build → GitHub Pages
+    └─ deploy-backend      push env vars to Render → trigger Render deploy
 ```
 
+Both `deploy-frontend` and `deploy-backend` run in parallel after tests pass — they don't wait for each other.
+
 **Workflow files:**
-- `.github/workflows/gh-pages.yml` — frontend → GitHub Pages
-- `.github/workflows/ci-cd-phin-drips.yml` — backend → Render (phin-drips)
-- `.github/workflows/ci-cd-phin-and-beans.yml` — backend → Render (phin-and-beans)
+- `.github/workflows/ci-cd-phin-drips.yml` — active; runs tests, deploys frontend to GitHub Pages + backend to Render
+- `.github/workflows/ci-cd-phin-and-beans.yml` — disabled (`workflow_dispatch` only); `deploy-frontend` job is commented out until PAB is ready to go live
 
 ---
 
@@ -484,9 +476,9 @@ push to main (any frontend/data change)
 1. Add entry to `stores/stores.json` with unique `slug` and `env_prefix`
 2. Create `stores/<slug>.env` with all variables + unique port offsets
 3. Create `backend/menus/<slug>/menu.csv`, `deals.csv`, `locations.csv`
-4. Copy Terraform: `cp -r terraform/envs/phin-drips terraform/envs/<slug>` — update `locals`, VPC CIDRs, S3 state key
-5. Copy workflow: `cp .github/workflows/ci-cd-phin-drips.yml .github/workflows/ci-cd-<slug>.yml` — update all store-specific values
-6. Add GitHub secrets: `DEV_{PREFIX}_*`, `PROD_{PREFIX}_*`
+4. Create a Render service for the new store (see [Backend Deployment](#backend-deployment-render))
+5. Copy workflow: `cp .github/workflows/ci-cd-phin-drips.yml .github/workflows/ci-cd-<slug>.yml` — update the `env` block and all store-specific secret names
+6. Add GitHub secrets: `RENDER_SERVICE_ID_<SLUG>`, `RENDER_DEPLOY_HOOK_<SLUG>`
 7. Test locally: `make up STORE=<slug>`
 
 ---
