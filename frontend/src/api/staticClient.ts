@@ -6,8 +6,10 @@
 
 import { STORE_SLUG } from '../config/store'
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 async function fetchJSON<T>(file: string): Promise<T> {
-  const res = await fetch(`/data/${STORE_SLUG}/${file}`)
+  const res = await fetch(`${BASE}/data/${STORE_SLUG}/${file}`)
   if (!res.ok) throw new Error(`Static data fetch failed: ${file}`)
   return res.json() as Promise<T>
 }
